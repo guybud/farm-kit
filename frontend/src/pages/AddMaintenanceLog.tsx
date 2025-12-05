@@ -28,6 +28,7 @@ type EquipmentOption = {
   id: string;
   nickname: string | null;
   unit_number: string | null;
+  category: string | null;
 };
 
 function AddMaintenanceLog({ session }: Props) {
@@ -35,6 +36,7 @@ function AddMaintenanceLog({ session }: Props) {
   const [equipmentOptions, setEquipmentOptions] = useState<EquipmentOption[]>(
     [],
   );
+  const [categoryFilter, setCategoryFilter] = useState('');
   const [equipmentId, setEquipmentId] = useState('');
   const [maintenanceDate, setMaintenanceDate] = useState(
     () => new Date().toISOString().slice(0, 10),
@@ -55,11 +57,28 @@ function AddMaintenanceLog({ session }: Props) {
     }, {});
   }, [equipmentOptions]);
 
+  const categories = useMemo(() => {
+    return Array.from(
+      new Set(
+        equipmentOptions
+          .map((item) => item.category)
+          .filter((cat): cat is string => Boolean(cat)),
+      ),
+    ).sort();
+  }, [equipmentOptions]);
+
+  const filteredEquipment = useMemo(() => {
+    if (!categoryFilter) return equipmentOptions;
+    return equipmentOptions.filter(
+      (item) => item.category === categoryFilter,
+    );
+  }, [equipmentOptions, categoryFilter]);
+
   useEffect(() => {
     const fetchEquipment = async () => {
       const { data, error: err } = await supabase
         .from('equipment')
-        .select('id, nickname, unit_number')
+        .select('id, nickname, unit_number, category')
         .order('nickname', { ascending: true });
       if (err) {
         setError(err.message);
@@ -118,6 +137,24 @@ function AddMaintenanceLog({ session }: Props) {
             </label>
 
             <label className="stack">
+              <span>Category</span>
+              <select
+                value={categoryFilter}
+                onChange={(e) => {
+                  setCategoryFilter(e.target.value);
+                  setEquipmentId('');
+                }}
+              >
+                <option value="">All categories</option>
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="stack">
               <span>Equipment</span>
               <select
                 value={equipmentId}
@@ -125,7 +162,7 @@ function AddMaintenanceLog({ session }: Props) {
                 required
               >
                 <option value="">Select equipment</option>
-                {equipmentOptions.map((item) => (
+                {filteredEquipment.map((item) => (
                   <option key={item.id} value={item.id}>
                     {equipmentLabel[item.id] ?? 'Unknown equipment'}
                   </option>

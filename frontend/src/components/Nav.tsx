@@ -86,16 +86,22 @@ function Nav({ session, email, pageTitle }: NavProps) {
     <nav className="card stack" style={{ marginBottom: '1rem' }}>
       <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
         {farmLogo && (
-          <img
-            src={farmLogo}
-            alt="Farm logo"
-            style={{ height: '36px', width: 'auto', objectFit: 'contain' }}
-          />
+          <Link to="/app" style={{ display: 'inline-flex', alignItems: 'center' }}>
+            <img
+              src={farmLogo}
+              alt="Farm logo"
+              style={{
+                height: '36px',
+                width: 'auto',
+                objectFit: 'contain',
+                cursor: 'pointer',
+              }}
+            />
+          </Link>
         )}
         <Link to="/app">Home</Link>
         <Link to="/equipment">Equipment</Link>
-        <Link to="/equipment/add">Add Equipment</Link>
-        <Link to="/maintenance/add">Add Maintenance Log</Link>
+        <Link to="/maintenance/add">Log Maintenance</Link>
         <Link to="/account">Account</Link>
         <Link to="/farm">Farm Setup</Link>
         <Link to="/users">Users</Link>
