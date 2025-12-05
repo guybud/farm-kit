@@ -102,17 +102,31 @@ function Nav({ session, email, pageTitle }: NavProps) {
         <Link to="/app">Home</Link>
         <Link to="/equipment">Equipment</Link>
         <Link to="/maintenance/add">Log Maintenance</Link>
-        <Link to="/account">Account</Link>
         <Link to="/farm">Farm Setup</Link>
         <Link to="/users">Users</Link>
         <span style={{ flex: 1 }} />
-        <button onClick={handleLogout} disabled={loading}>
-          {loading ? 'Signing out...' : 'Logout'}
-        </button>
       </div>
       <div className="stack" style={{ alignItems: 'flex-start' }}>
         <div style={{ fontSize: '0.9rem' }}>
           Welcome {displayNode}
+          <span style={{ marginLeft: '0.75rem', fontSize: '0.85rem' }}>
+            <Link to="/account">Account</Link>
+            {' | '}
+            <button
+              onClick={handleLogout}
+              disabled={loading}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                color: '#0f172a',
+                textDecoration: 'underline',
+                cursor: 'pointer',
+              }}
+            >
+              {loading ? 'Signing out...' : 'Logout'}
+            </button>
+          </span>
         </div>
         <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>
           {farmName || farmLink}

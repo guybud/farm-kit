@@ -164,4 +164,7 @@ You can use, modify, self-host, or build on Farm Kit freely.
 ---
 
 ## Status
-Early development. Expect changes as the app takes shape.
+Early development (Alpha). Expect changes as the app takes shape.
+
+## Release notes
+- 0.0.4: First live deploy (alpha)
