@@ -28,7 +28,7 @@ type UserForm = Partial<User> & {
 function ManageUsers({ session }: Props) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [, setSelectedUser] = useState<User | null>(null);
   const [form, setForm] = useState<UserForm>({
     email: '',
     role: 'user',

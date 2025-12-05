@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import Nav from '../components/Nav';
 
@@ -44,7 +43,6 @@ type MaintenanceLog = {
 };
 
 function EquipmentPage({ session }: EquipmentPageProps) {
-  const navigate = useNavigate();
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
