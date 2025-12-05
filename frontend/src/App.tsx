@@ -12,6 +12,17 @@ import Account from './pages/Account';
 import FarmSetup from './pages/FarmSetup';
 import ManageUsers from './pages/ManageUsers';
 
+const APP_VERSION = '0.0.3';
+
+function versionStage(version: string): 'Alpha' | 'Beta' | 'Stable' {
+  const [majorStr, minorStr] = version.split('.');
+  const major = Number(majorStr) || 0;
+  const minor = Number(minorStr) || 0;
+  if (major === 0 && minor < 1) return 'Alpha';
+  if (major === 0 && minor >= 1) return 'Beta';
+  return 'Stable';
+}
+
 function RequireAuth({
   session,
   children,
@@ -56,73 +67,78 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login session={session} />} />
-        <Route
-          path="/app"
-          element={
-            <RequireAuth session={session}>
-              <Home session={session as Session} />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/equipment"
-          element={
-            <RequireAuth session={session}>
-              {/* session is guaranteed non-null here */}
-              <Equipment session={session as Session} />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/equipment/add"
-          element={
-            <RequireAuth session={session}>
-              {/* session is guaranteed non-null here */}
-              <AddEquipment session={session as Session} />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/maintenance/add"
-          element={
-            <RequireAuth session={session}>
-              <AddMaintenanceLog session={session as Session} />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/account"
-          element={
-            <RequireAuth session={session}>
-              <Account session={session as Session} />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/farm"
-          element={
-            <RequireAuth session={session}>
-              <FarmSetup session={session as Session} />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/users"
-          element={
-            <RequireAuth session={session}>
-              <ManageUsers session={session as Session} />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="*"
-          element={<Navigate to={session ? '/app' : '/login'} replace />}
-        />
-      </Routes>
-    </BrowserRouter>
+    <>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Login session={session} />} />
+          <Route
+            path="/app"
+            element={
+              <RequireAuth session={session}>
+                <Home session={session as Session} />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/equipment"
+            element={
+              <RequireAuth session={session}>
+                {/* session is guaranteed non-null here */}
+                <Equipment session={session as Session} />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/equipment/add"
+            element={
+              <RequireAuth session={session}>
+                {/* session is guaranteed non-null here */}
+                <AddEquipment session={session as Session} />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/maintenance/add"
+            element={
+              <RequireAuth session={session}>
+                <AddMaintenanceLog session={session as Session} />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/account"
+            element={
+              <RequireAuth session={session}>
+                <Account session={session as Session} />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/farm"
+            element={
+              <RequireAuth session={session}>
+                <FarmSetup session={session as Session} />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/users"
+            element={
+              <RequireAuth session={session}>
+                <ManageUsers session={session as Session} />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="*"
+            element={<Navigate to={session ? '/app' : '/login'} replace />}
+          />
+        </Routes>
+      </BrowserRouter>
+      <div className="version-badge">
+        Farm Kit v{APP_VERSION} {versionStage(APP_VERSION)}
+      </div>
+    </>
   );
 }
 

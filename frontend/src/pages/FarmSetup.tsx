@@ -16,6 +16,7 @@ type Farm = {
   website_url: string | null;
   app_url: string | null;
   favicon_url: string | null;
+  logo_url: string | null;
 };
 
 type UserOption = {
@@ -53,6 +54,7 @@ function FarmSetup({ session }: Props) {
         website_url: '',
         app_url: '',
         favicon_url: '',
+        logo_url: '',
       }
     );
   }, [farm]);
@@ -85,7 +87,7 @@ function FarmSetup({ session }: Props) {
           supabase
             .from('farms')
             .select(
-              'id, name, admin_user_id, email, phone, website_url, app_url, favicon_url',
+              'id, name, admin_user_id, email, phone, website_url, app_url, favicon_url, logo_url',
             )
             .order('created_at', { ascending: true })
             .limit(1)
@@ -133,6 +135,7 @@ function FarmSetup({ session }: Props) {
       website_url: farmState.website_url || null,
       app_url: farmState.app_url || null,
       favicon_url: farmState.favicon_url || null,
+      logo_url: farmState.logo_url || null,
     };
 
     const { error: upsertError } = await supabase.from('farms').upsert(payload);
@@ -280,6 +283,18 @@ function FarmSetup({ session }: Props) {
                 >
                   Fetch favicon from website
                 </button>
+              </label>
+
+              <label className="stack">
+                <span>Logo URL</span>
+                <input
+                  type="url"
+                  value={farmState.logo_url ?? ''}
+                  onChange={(e) =>
+                    setFarm({ ...farmState, logo_url: e.target.value })
+                  }
+                  placeholder="https://example.com/logo.png"
+                />
               </label>
 
               <button type="submit" disabled={saving || role !== 'admin'}>

@@ -14,6 +14,8 @@ function Nav({ session, email, pageTitle }: NavProps) {
   const [error, setError] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [farmName, setFarmName] = useState<string | null>(null);
+  const [farmFavicon, setFarmFavicon] = useState<string | null>(null);
+  const [farmLogo, setFarmLogo] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -26,11 +28,18 @@ function Nav({ session, email, pageTitle }: NavProps) {
           .select('name')
           .eq('auth_user_id', session.user.id)
           .maybeSingle(),
-        supabase.from('farms').select('name').order('created_at').limit(1).maybeSingle(),
+        supabase
+          .from('farms')
+          .select('name, favicon_url, logo_url')
+          .order('created_at')
+          .limit(1)
+          .maybeSingle(),
       ]);
       if (!active) return;
       setDisplayName(profile?.name ?? null);
       setFarmName(farm?.name ?? null);
+      setFarmFavicon(farm?.favicon_url ?? null);
+      setFarmLogo(farm?.logo_url ?? null);
     };
     loadProfile();
     return () => {
@@ -44,6 +53,17 @@ function Nav({ session, email, pageTitle }: NavProps) {
     const page = pageTitle ? `${pageTitle} | ` : '';
     document.title = `${page}${farm}${baseTitle}`;
   }, [farmName, pageTitle]);
+
+  useEffect(() => {
+    if (!farmFavicon) return;
+    let link = document.querySelector<HTMLLinkElement>("link[rel*='icon']");
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.head.appendChild(link);
+    }
+    link.href = farmFavicon;
+  }, [farmFavicon]);
 
   const handleLogout = async () => {
     setLoading(true);
@@ -65,6 +85,13 @@ function Nav({ session, email, pageTitle }: NavProps) {
   return (
     <nav className="card stack" style={{ marginBottom: '1rem' }}>
       <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+        {farmLogo && (
+          <img
+            src={farmLogo}
+            alt="Farm logo"
+            style={{ height: '36px', width: 'auto', objectFit: 'contain' }}
+          />
+        )}
         <Link to="/app">Home</Link>
         <Link to="/equipment">Equipment</Link>
         <Link to="/equipment/add">Add Equipment</Link>

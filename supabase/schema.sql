@@ -48,6 +48,7 @@ create table if not exists public.farms (
   website_url text,
   app_url text,
   favicon_url text,
+  logo_url text,
   created_at timestamptz not null default now()
 );
 
@@ -106,6 +107,12 @@ alter table if exists public.app_users
   add column if not exists last_modified_at timestamptz,
   add column if not exists last_modified_by_id uuid references public.app_users(id) on delete set null;
 
+alter table if exists public.farms
+  add column if not exists website_url text,
+  add column if not exists app_url text,
+  add column if not exists favicon_url text,
+  add column if not exists logo_url text;
+
 create table if not exists public.farms (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -115,5 +122,6 @@ create table if not exists public.farms (
   website_url text,
   app_url text,
   favicon_url text,
+  logo_url text,
   created_at timestamptz not null default now()
 );

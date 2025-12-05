@@ -106,6 +106,7 @@ Farm Kit is a simple web app that helps farms track equipment, log maintenance, 
 | website_url    | text        | optional                      |
 | app_url        | text        | optional                      |
 | favicon_url    | text        | optional (derived from site)  |
+| logo_url       | text        | optional (displayed in header)|
 | created_at     | timestamptz |                               |
 
 ---
