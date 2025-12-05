@@ -39,6 +39,7 @@ function AddMaintenanceLog({ session }: Props) {
   );
   const [createdById, setCreatedById] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [searchFilter, setSearchFilter] = useState('');
   const [equipmentId, setEquipmentId] = useState('');
   const [maintenanceDate, setMaintenanceDate] = useState(
     () => new Date().toISOString().slice(0, 10),
@@ -70,11 +71,26 @@ function AddMaintenanceLog({ session }: Props) {
   }, [equipmentOptions]);
 
   const filteredEquipment = useMemo(() => {
-    if (!categoryFilter) return equipmentOptions;
-    return equipmentOptions.filter(
-      (item) => item.category === categoryFilter,
-    );
-  }, [equipmentOptions, categoryFilter]);
+    let items = equipmentOptions;
+    if (categoryFilter) {
+      items = items.filter((item) => item.category === categoryFilter);
+    }
+    if (searchFilter.trim()) {
+      const term = searchFilter.toLowerCase();
+      items = items.filter((item) => {
+        const haystack = [
+          item.nickname,
+          item.unit_number,
+          item.category,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        return haystack.includes(term);
+      });
+    }
+    return items;
+  }, [equipmentOptions, categoryFilter, searchFilter]);
 
   useEffect(() => {
     const fetchEquipment = async () => {
@@ -180,6 +196,59 @@ function AddMaintenanceLog({ session }: Props) {
                 ))}
               </select>
             </label>
+
+            <label className="stack">
+              <span>Search equipment</span>
+              <input
+                type="text"
+                value={searchFilter}
+                onChange={(e) => {
+                  setSearchFilter(e.target.value);
+                  setEquipmentId('');
+                }}
+                placeholder="Search nickname, unit #, or category"
+              />
+            </label>
+
+            {searchFilter.trim() && (
+              <div
+                className="card"
+                style={{
+                  padding: '0.75rem',
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 4px 12px rgba(15,23,42,0.08)',
+                }}
+              >
+                <div style={{ marginBottom: '0.35rem', fontWeight: 700 }}>
+                  Results
+                </div>
+                {filteredEquipment.length === 0 && <p>No matches</p>}
+                {filteredEquipment.length > 0 && (
+                  <div className="stack" style={{ gap: '0.4rem' }}>
+                    {filteredEquipment.slice(0, 5).map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        style={{
+                          textAlign: 'left',
+                          background: '#fff',
+                          color: '#0f172a',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '8px',
+                          padding: '0.5rem 0.65rem',
+                        }}
+                        onClick={() => {
+                          setEquipmentId(item.id);
+                          setSearchFilter('');
+                        }}
+                      >
+                        {equipmentLabel[item.id] ?? 'Unknown equipment'}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             <label className="stack">
               <span>Equipment</span>

@@ -10,6 +10,7 @@ import AddMaintenanceLog from './pages/AddMaintenanceLog';
 import Account from './pages/Account';
 import FarmSetup from './pages/FarmSetup';
 import ManageUsers from './pages/ManageUsers';
+import SearchPage from './pages/Search';
 
 const APP_VERSION = '0.0.6';
 
@@ -111,18 +112,26 @@ function App() {
               </RequireAuth>
             }
           />
-          <Route
-            path="/users"
-            element={
-              <RequireAuth session={session}>
-                <ManageUsers session={session as Session} />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="*"
-            element={<Navigate to={session ? '/app' : '/login'} replace />}
-          />
+        <Route
+          path="/users"
+          element={
+            <RequireAuth session={session}>
+              <ManageUsers session={session as Session} />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/search"
+          element={
+            <RequireAuth session={session}>
+              <SearchPage session={session as Session} />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="*"
+          element={<Navigate to={session ? '/app' : '/login'} replace />}
+        />
         </Routes>
       </BrowserRouter>
       <div className="version-badge">

@@ -17,6 +17,10 @@ function Nav({ session, email, pageTitle }: NavProps) {
   const [farmFavicon, setFarmFavicon] = useState<string | null>(null);
   const [farmLogo, setFarmLogo] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<
+    { id: string; title: string; subtitle: string }[]
+  >([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -100,10 +104,7 @@ function Nav({ session, email, pageTitle }: NavProps) {
   }, [menuOpen]);
 
   return (
-    <nav
-      className="card stack"
-      style={{ marginBottom: '1rem', position: 'relative' }}
-    >
+    <nav className="card stack nav-card" style={{ marginBottom: '1rem', position: 'relative', gap: '0.6rem' }}>
       <div
         style={{
           display: 'flex',
@@ -161,31 +162,82 @@ function Nav({ session, email, pageTitle }: NavProps) {
         </div>
       </div>
       <div
-        className="stack"
-        style={{ alignItems: 'flex-start', flexDirection: 'row', gap: '0.75rem' }}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.5rem',
+        }}
       >
-        <div style={{ fontSize: '0.95rem' }}>Welcome {displayNode}</div>
-        <div style={{ fontSize: '0.9rem' }}>
-          <Link to="/account">Account</Link>
-          {' | '}
-          <button
-            type="button"
-            onClick={async () => {
-              await handleLogout();
-              closeMenu();
-            }}
-            disabled={loading}
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              color: '#0f172a',
-              textDecoration: 'underline',
-              cursor: 'pointer',
-            }}
-          >
-            {loading ? 'Signing out...' : 'Logout'}
-          </button>
+        <div
+          style={{
+            display: 'flex',
+            gap: '0.75rem',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+          }}
+        >
+          <div style={{ fontSize: '0.95rem' }}>Welcome {displayNode}</div>
+          <div style={{ fontSize: '0.9rem' }}>
+            <Link to="/account">Account</Link>
+            {' | '}
+            <button
+              type="button"
+              onClick={async () => {
+                await handleLogout();
+                closeMenu();
+              }}
+              disabled={loading}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                color: '#0f172a',
+                textDecoration: 'underline',
+                cursor: 'pointer',
+              }}
+            >
+              {loading ? 'Signing out...' : 'Logout'}
+            </button>
+          </div>
+        </div>
+        <div
+          className="stack"
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: '0.5rem',
+            justifyContent: 'flex-end',
+            flexWrap: 'wrap',
+          }}
+        >
+          <div style={{ position: 'relative', flex: '1 1 240px' }}>
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onFocus={() => setMenuOpen(false)}
+              style={{ width: '100%' }}
+            />
+            {searchTerm.trim() && (
+              <div className="search-popover">
+                {searchResults.slice(0, 10).map((res) => (
+                  <div key={res.id} className="search-item">
+                    <div style={{ fontWeight: 700 }}>{res.title}</div>
+                    <div style={{ fontSize: '0.85rem', color: '#475569' }}>
+                      {res.subtitle}
+                    </div>
+                  </div>
+                ))}
+                <div className="search-more">
+                  <Link to={`/search?term=${encodeURIComponent(searchTerm)}`}>
+                    View more results
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+          <Link to="/search">Advanced</Link>
         </div>
       </div>
       {error && <p className="status">{error}</p>}
@@ -217,6 +269,9 @@ function Nav({ session, email, pageTitle }: NavProps) {
               </Link>
               <Link className="nav-btn" to="/users" onClick={closeMenu}>
                 Users
+              </Link>
+              <Link className="nav-btn" to="/search" onClick={closeMenu}>
+                Advanced Search
               </Link>
               <Link className="nav-btn" to="/account" onClick={closeMenu}>
                 Account

@@ -24,6 +24,10 @@
   overflow: hidden;
 }
 
+.nav-card {
+  overflow: visible;
+}
+
 .stack {
   display: flex;
   flex-direction: column;
@@ -155,6 +159,38 @@ th {
   background: #e2e8f0;
   box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
   transform: translateY(-1px);
+}
+
+.search-popover {
+  position: absolute;
+  top: 105%;
+  right: 0;
+  left: 0;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+  padding: 0.5rem;
+  z-index: 1300;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.search-item {
+  padding: 0.4rem 0.35rem;
+  border-radius: 8px;
+}
+
+.search-item:hover {
+  background: #f8fafc;
+}
+
+.search-more {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 0.35rem;
+  text-align: right;
+  font-weight: 700;
 }
 
 @media (max-width: 768px) {
