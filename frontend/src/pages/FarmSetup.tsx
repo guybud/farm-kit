@@ -138,7 +138,7 @@ function FarmSetup({ session }: Props) {
   if (role !== 'admin' && !loading) {
     return (
       <>
-        <Nav email={session.user.email} />
+        <Nav session={session} email={session.user.email} />
         <div className="app">
           <div className="card stack">
             <h1>Farm Setup</h1>
@@ -151,7 +151,7 @@ function FarmSetup({ session }: Props) {
 
   return (
     <>
-      <Nav email={session.user.email} />
+      <Nav session={session} email={session.user.email} />
       <div className="app">
         <div className="card stack">
           <h1>Farm Setup</h1>

@@ -1,15 +1,41 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
 
 type NavProps = {
+  session?: Session;
   email?: string;
 };
 
-function Nav({ email }: NavProps) {
+function Nav({ session, email }: NavProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string | null>(null);
+  const [farmName, setFarmName] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    let active = true;
+    const loadProfile = async () => {
+      if (!session?.user) return;
+      const [{ data: profile }, { data: farm }] = await Promise.all([
+        supabase
+          .from('app_users')
+          .select('name')
+          .eq('auth_user_id', session.user.id)
+          .maybeSingle(),
+        supabase.from('farms').select('name').order('created_at').limit(1).maybeSingle(),
+      ]);
+      if (!active) return;
+      setDisplayName(profile?.name ?? null);
+      setFarmName(farm?.name ?? null);
+    };
+    loadProfile();
+    return () => {
+      active = false;
+    };
+  }, [session?.user]);
 
   const handleLogout = async () => {
     setLoading(true);
@@ -23,6 +49,11 @@ function Nav({ email }: NavProps) {
     navigate('/login', { replace: true });
   };
 
+  const welcomeText = displayName || email || session?.user.email || '';
+  const displayLink = <Link to="/account">Set display name</Link>;
+  const farmLink = <Link to="/farm">Set farm name</Link>;
+  const displayNode = welcomeText ? <strong>{welcomeText}</strong> : displayLink;
+
   return (
     <nav className="card stack" style={{ marginBottom: '1rem' }}>
       <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -33,10 +64,17 @@ function Nav({ email }: NavProps) {
         <Link to="/account">Account</Link>
         <Link to="/farm">Farm Setup</Link>
         <span style={{ flex: 1 }} />
-        {email && <span>{email}</span>}
         <button onClick={handleLogout} disabled={loading}>
           {loading ? 'Signing out...' : 'Logout'}
         </button>
+      </div>
+      <div className="stack" style={{ alignItems: 'flex-start' }}>
+        <div style={{ fontSize: '0.9rem' }}>
+          Welcome {displayNode}
+        </div>
+        <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>
+          {farmName || farmLink}
+        </div>
       </div>
       {error && <p className="status">{error}</p>}
     </nav>
