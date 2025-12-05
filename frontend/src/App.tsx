@@ -6,13 +6,12 @@ import { supabase } from './lib/supabaseClient';
 import Login from './pages/Login';
 import Home from './pages/Home';
 import Equipment from './pages/Equipment';
-import AddEquipment from './pages/AddEquipment';
 import AddMaintenanceLog from './pages/AddMaintenanceLog';
 import Account from './pages/Account';
 import FarmSetup from './pages/FarmSetup';
 import ManageUsers from './pages/ManageUsers';
 
-const APP_VERSION = '0.0.3';
+const APP_VERSION = '0.0.4';
 
 function versionStage(version: string): 'Alpha' | 'Beta' | 'Stable' {
   const [majorStr, minorStr] = version.split('.');
@@ -85,15 +84,6 @@ function App() {
               <RequireAuth session={session}>
                 {/* session is guaranteed non-null here */}
                 <Equipment session={session as Session} />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/equipment/add"
-            element={
-              <RequireAuth session={session}>
-                {/* session is guaranteed non-null here */}
-                <AddEquipment session={session as Session} />
               </RequireAuth>
             }
           />
