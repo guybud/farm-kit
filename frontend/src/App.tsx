@@ -11,7 +11,7 @@ import Account from './pages/Account';
 import FarmSetup from './pages/FarmSetup';
 import ManageUsers from './pages/ManageUsers';
 
-const APP_VERSION = '0.0.5';
+const APP_VERSION = '0.0.6';
 
 function versionStage(version: string): 'Alpha' | 'Beta' | 'Stable' {
   const [majorStr, minorStr] = version.split('.');
