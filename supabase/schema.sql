@@ -38,6 +38,18 @@ create table if not exists public.equipment (
 
 create index if not exists equipment_location_id_idx on public.equipment (location_id);
 
+-- farms
+create table if not exists public.farms (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  admin_user_id uuid references public.app_users(id) on delete set null,
+  email text,
+  phone text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists farms_admin_user_id_idx on public.farms (admin_user_id);
+
 -- app_users
 create table if not exists public.app_users (
   id uuid primary key default gen_random_uuid(),
@@ -86,3 +98,12 @@ alter table if exists public.maintenance_logs
 alter table if exists public.app_users
   add column if not exists first_name text,
   add column if not exists last_name text;
+
+create table if not exists public.farms (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  admin_user_id uuid references public.app_users(id) on delete set null,
+  email text,
+  phone text,
+  created_at timestamptz not null default now()
+);

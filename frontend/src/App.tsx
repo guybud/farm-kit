@@ -9,6 +9,7 @@ import Equipment from './pages/Equipment';
 import AddEquipment from './pages/AddEquipment';
 import AddMaintenanceLog from './pages/AddMaintenanceLog';
 import Account from './pages/Account';
+import FarmSetup from './pages/FarmSetup';
 
 function RequireAuth({
   session,
@@ -96,6 +97,14 @@ function App() {
           element={
             <RequireAuth session={session}>
               <Account session={session as Session} />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/farm"
+          element={
+            <RequireAuth session={session}>
+              <FarmSetup session={session as Session} />
             </RequireAuth>
           }
         />
