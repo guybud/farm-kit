@@ -146,6 +146,11 @@ SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npx ts-node supabase/invite_user.
 ```
 The script uses `auth.admin.inviteUserByEmail`, upserts `app_users` with the returned `auth_user_id`, and defaults role to `user` if not specified.
 
+To wire the frontend “Send login email” button (Manage Users page):
+- Provide an HTTP endpoint (e.g., Netlify/Vercel function) at `VITE_INVITE_ENDPOINT` (defaults to `/api/send-invite`).
+- That endpoint must call Supabase `auth.admin.inviteUserByEmail` using the service role key and upsert `app_users` (similar to `supabase/invite_user.ts`), returning 200 on success or an error JSON: `{ "error": "message" }`.
+- Do NOT expose the service role key to the browser; keep it only in your serverless function/secret store.
+
 ---
 
 ## License

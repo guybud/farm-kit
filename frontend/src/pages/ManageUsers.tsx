@@ -36,6 +36,7 @@ function ManageUsers({ session }: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [inviting, setInviting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState('');
 
@@ -136,6 +137,39 @@ function ManageUsers({ session }: Props) {
     setSaving(false);
     resetForm();
     loadData();
+  };
+
+  const handleInvite = async (user: User) => {
+    if (!isAdmin) return;
+    const endpoint =
+      import.meta.env.VITE_INVITE_ENDPOINT || '/api/send-invite';
+    setInviting(true);
+    setError(null);
+    setStatus('');
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: user.email,
+          role: user.role,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          name: user.name,
+        }),
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || response.statusText);
+      }
+      setStatus(`Invite email sent to ${user.email}.`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Invite failed';
+      setError(message);
+    } finally {
+      setInviting(false);
+    }
   };
 
   const handleDelete = async (user: User) => {
@@ -312,6 +346,14 @@ function ManageUsers({ session }: Props) {
                             style={{ background: '#fdd', color: '#900' }}
                           >
                             Delete
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleInvite(u)}
+                            disabled={inviting}
+                            style={{ background: '#eef', color: '#114' }}
+                          >
+                            {inviting ? 'Sending...' : 'Send login email'}
                           </button>
                         </td>
                       </tr>
