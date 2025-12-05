@@ -125,12 +125,26 @@ alter table if exists public.equipment
 
 alter table if exists public.maintenance_logs
   add column if not exists maintenance_date date;
+
+alter table if exists public.app_users
+  add column if not exists first_name text,
+  add column if not exists last_name text,
+  add column if not exists last_modified_at timestamptz,
+  add column if not exists last_modified_by_id uuid references public.app_users(id) on delete set null;
 ```
 2) Seed sample data:
 - Supabase SQL editor: run `supabase/seed_sample_data.sql`
 - Or `psql "$SUPABASE_DB_URL" -f supabase/seed_sample_data.sql`
 
 3) Refresh the app at `http://localhost:5173/` (logged in) to see seeded records.
+
+## Inviting users (server-side)
+- Requires service role key (never expose to frontend).
+- Send an invite and upsert `app_users`:
+```bash
+SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npx ts-node supabase/invite_user.ts user@example.com admin "First" "Last"
+```
+The script uses `auth.admin.inviteUserByEmail`, upserts `app_users` with the returned `auth_user_id`, and defaults role to `user` if not specified.
 
 ---
 
