@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
 import Nav from '../components/Nav';
@@ -33,6 +33,7 @@ type EquipmentOption = {
 
 function AddMaintenanceLog({ session }: Props) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [equipmentOptions, setEquipmentOptions] = useState<EquipmentOption[]>(
     [],
   );
@@ -104,7 +105,13 @@ function AddMaintenanceLog({ session }: Props) {
 
     fetchEquipment();
     fetchUser();
-  }, [session.user.id]);
+
+    const params = new URLSearchParams(location.search);
+    const preselect = params.get('equipment_id');
+    if (preselect) {
+      setEquipmentId(preselect);
+    }
+  }, [session.user.id, location.search]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
