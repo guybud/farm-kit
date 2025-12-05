@@ -43,6 +43,8 @@ create table if not exists public.app_users (
   id uuid primary key default gen_random_uuid(),
   auth_user_id uuid not null unique,
   name text not null,
+  first_name text,
+  last_name text,
   email text not null unique,
   role text not null check (role in ('admin', 'user')),
   created_at timestamptz not null default now()
@@ -80,3 +82,7 @@ alter table if exists public.equipment
 
 alter table if exists public.maintenance_logs
   add column if not exists maintenance_date date;
+
+alter table if exists public.app_users
+  add column if not exists first_name text,
+  add column if not exists last_name text;

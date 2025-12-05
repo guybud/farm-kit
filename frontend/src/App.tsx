@@ -8,6 +8,7 @@ import Home from './pages/Home';
 import Equipment from './pages/Equipment';
 import AddEquipment from './pages/AddEquipment';
 import AddMaintenanceLog from './pages/AddMaintenanceLog';
+import Account from './pages/Account';
 
 function RequireAuth({
   session,
@@ -87,6 +88,14 @@ function App() {
           element={
             <RequireAuth session={session}>
               <AddMaintenanceLog session={session as Session} />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/account"
+          element={
+            <RequireAuth session={session}>
+              <Account session={session as Session} />
             </RequireAuth>
           }
         />

@@ -67,8 +67,8 @@ where not exists (
 -- Seed maintenance logs
 -- Ensure at least one user to satisfy created_by_id not-null in some environments
 with seed_user as (
-  insert into public.app_users (id, auth_user_id, name, email, role)
-  values (gen_random_uuid(), gen_random_uuid(), 'Seed Bot', 'seed@example.com', 'admin')
+  insert into public.app_users (id, auth_user_id, name, first_name, last_name, email, role)
+  values (gen_random_uuid(), gen_random_uuid(), 'Seed Bot', 'Seed', 'Bot', 'seed@example.com', 'admin')
   on conflict do nothing
   returning id
 ), fallback_user as (

@@ -68,14 +68,16 @@ Farm Kit is a simple web app that helps farms track equipment, log maintenance, 
 | notes                | text   | optional                                |
 
 ### app_users
-| field        | type      |
-|--------------|-----------|
-| id           | uuid      |
-| auth_user_id | uuid      |
-| name         | text      |
-| email        | text      |
-| role         | text      |
-| created_at   | timestamp |
+| field        | type      | notes                     |
+|--------------|-----------|---------------------------|
+| id           | uuid      |                           |
+| auth_user_id | uuid      | Supabase auth user id     |
+| name         | text      | full display name         |
+| first_name   | text      | optional                   |
+| last_name    | text      | optional                   |
+| email        | text      | unique                     |
+| role         | text      | e.g. admin, user           |
+| created_at   | timestamp |                           |
 
 ### maintenance_logs
 | field            | type        | notes                         |

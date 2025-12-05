@@ -30,6 +30,7 @@ function Nav({ email }: NavProps) {
         <Link to="/equipment">Equipment</Link>
         <Link to="/equipment/add">Add Equipment</Link>
         <Link to="/maintenance/add">Add Maintenance Log</Link>
+        <Link to="/account">Account</Link>
         <span style={{ flex: 1 }} />
         {email && <span>{email}</span>}
         <button onClick={handleLogout} disabled={loading}>
