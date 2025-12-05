@@ -16,6 +16,7 @@ function Nav({ session, email, pageTitle }: NavProps) {
   const [farmName, setFarmName] = useState<string | null>(null);
   const [farmFavicon, setFarmFavicon] = useState<string | null>(null);
   const [farmLogo, setFarmLogo] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -74,6 +75,7 @@ function Nav({ session, email, pageTitle }: NavProps) {
       setLoading(false);
       return;
     }
+    setMenuOpen(false);
     navigate('/login', { replace: true });
   };
 
@@ -82,57 +84,164 @@ function Nav({ session, email, pageTitle }: NavProps) {
   const farmLink = <Link to="/farm">Set farm name</Link>;
   const displayNode = welcomeText ? <strong>{welcomeText}</strong> : displayLink;
 
+  const closeMenu = () => setMenuOpen(false);
+  const toggleMenu = () => setMenuOpen((v) => !v);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      const nav = document.querySelector('nav');
+      if (nav && !nav.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, [menuOpen]);
+
   return (
-    <nav className="card stack" style={{ marginBottom: '1rem' }}>
-      <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-        {farmLogo && (
-          <Link to="/app" style={{ display: 'inline-flex', alignItems: 'center' }}>
-            <img
-              src={farmLogo}
-              alt="Farm logo"
-              style={{
-                height: '36px',
-                width: 'auto',
-                objectFit: 'contain',
-                cursor: 'pointer',
-              }}
-            />
+    <nav
+      className="card stack"
+      style={{ marginBottom: '1rem', position: 'relative' }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          gap: '1rem',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          {farmLogo && (
+            <Link to="/app" style={{ display: 'inline-flex', alignItems: 'center' }}>
+              <img
+                src={farmLogo}
+                alt="Farm logo"
+                style={{
+                  height: '36px',
+                  width: 'auto',
+                  objectFit: 'contain',
+                  cursor: 'pointer',
+                }}
+              />
+            </Link>
+          )}
+          <Link to="/app" style={{ fontWeight: 700, fontSize: '1rem' }}>
+            {farmName || farmLink}
           </Link>
-        )}
-        <Link to="/app">Home</Link>
-        <Link to="/equipment">Equipment</Link>
-        <Link to="/maintenance/add">Log Maintenance</Link>
-        <Link to="/farm">Farm Setup</Link>
-        <Link to="/users">Users</Link>
-        <span style={{ flex: 1 }} />
-      </div>
-      <div className="stack" style={{ alignItems: 'flex-start' }}>
-        <div style={{ fontSize: '0.9rem' }}>
-          Welcome {displayNode}
-          <span style={{ marginLeft: '0.75rem', fontSize: '0.85rem' }}>
-            <Link to="/account">Account</Link>
-            {' | '}
-            <button
-              onClick={handleLogout}
-              disabled={loading}
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: 0,
-                color: '#0f172a',
-                textDecoration: 'underline',
-                cursor: 'pointer',
-              }}
-            >
-              {loading ? 'Signing out...' : 'Logout'}
-            </button>
-          </span>
         </div>
-        <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>
-          {farmName || farmLink}
+        <button
+          className="mobile-toggle"
+          aria-label="Toggle navigation"
+          aria-expanded={menuOpen}
+          type="button"
+          onClick={toggleMenu}
+        >
+          <span />
+          <span />
+          <span />
+        </button>
+        <div className={`nav-links ${menuOpen ? 'nav-open' : ''}`}>
+          <Link className="nav-btn" to="/app" onClick={closeMenu}>
+            Home
+          </Link>
+          <Link className="nav-btn" to="/equipment" onClick={closeMenu}>
+            Equipment
+          </Link>
+          <Link className="nav-btn" to="/maintenance/add" onClick={closeMenu}>
+            Log Maintenance
+          </Link>
+          <Link className="nav-btn" to="/farm" onClick={closeMenu}>
+            Farm Setup
+          </Link>
+          <Link className="nav-btn" to="/users" onClick={closeMenu}>
+            Users
+          </Link>
+        </div>
+      </div>
+      <div
+        className="stack"
+        style={{ alignItems: 'flex-start', flexDirection: 'row', gap: '0.75rem' }}
+      >
+        <div style={{ fontSize: '0.95rem' }}>Welcome {displayNode}</div>
+        <div style={{ fontSize: '0.9rem' }}>
+          <Link to="/account">Account</Link>
+          {' | '}
+          <button
+            type="button"
+            onClick={async () => {
+              await handleLogout();
+              closeMenu();
+            }}
+            disabled={loading}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              color: '#0f172a',
+              textDecoration: 'underline',
+              cursor: 'pointer',
+            }}
+          >
+            {loading ? 'Signing out...' : 'Logout'}
+          </button>
         </div>
       </div>
       {error && <p className="status">{error}</p>}
+      {menuOpen && (
+        <div
+          className="modal-backdrop"
+          onClick={() => {
+            closeMenu();
+          }}
+          style={{ zIndex: 1200 }}
+        >
+          <div
+            className="modal"
+            style={{ width: 'min(340px, 100%)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="stack">
+              <Link className="nav-btn" to="/app" onClick={closeMenu}>
+                Home
+              </Link>
+              <Link className="nav-btn" to="/equipment" onClick={closeMenu}>
+                Equipment
+              </Link>
+              <Link className="nav-btn" to="/maintenance/add" onClick={closeMenu}>
+                Log Maintenance
+              </Link>
+              <Link className="nav-btn" to="/farm" onClick={closeMenu}>
+                Farm Setup
+              </Link>
+              <Link className="nav-btn" to="/users" onClick={closeMenu}>
+                Users
+              </Link>
+              <Link className="nav-btn" to="/account" onClick={closeMenu}>
+                Account
+              </Link>
+              <button
+                type="button"
+                onClick={async () => {
+                  await handleLogout();
+                  closeMenu();
+                }}
+                disabled={loading}
+              >
+                {loading ? 'Signing out...' : 'Logout'}
+              </button>
+              <button
+                type="button"
+                style={{ background: '#ccc', color: '#000' }}
+                onClick={closeMenu}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 }

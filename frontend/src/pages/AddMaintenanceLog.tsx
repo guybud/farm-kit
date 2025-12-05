@@ -36,6 +36,7 @@ function AddMaintenanceLog({ session }: Props) {
   const [equipmentOptions, setEquipmentOptions] = useState<EquipmentOption[]>(
     [],
   );
+  const [createdById, setCreatedById] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState('');
   const [equipmentId, setEquipmentId] = useState('');
   const [maintenanceDate, setMaintenanceDate] = useState(
@@ -88,13 +89,31 @@ function AddMaintenanceLog({ session }: Props) {
       }
     };
 
+    const fetchUser = async () => {
+      const { data, error: userErr } = await supabase
+        .from('app_users')
+        .select('id')
+        .eq('auth_user_id', session.user.id)
+        .maybeSingle();
+      if (userErr) {
+        setError(userErr.message);
+      } else {
+        setCreatedById(data?.id ?? null);
+      }
+    };
+
     fetchEquipment();
-  }, []);
+    fetchUser();
+  }, [session.user.id]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!equipmentId) {
       setError('Select equipment for this maintenance log.');
+      return;
+    }
+    if (!createdById) {
+      setError('Could not resolve your profile to set created_by_id.');
       return;
     }
 
@@ -105,6 +124,7 @@ function AddMaintenanceLog({ session }: Props) {
       .from('maintenance_logs')
       .insert<MaintenanceLogInsert>({
         equipment_id: equipmentId,
+        created_by_id: createdById,
         title,
         description: description || null,
         maintenance_date: maintenanceDate || null,
