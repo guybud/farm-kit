@@ -13,6 +13,9 @@ type Farm = {
   admin_user_id: string | null;
   email: string | null;
   phone: string | null;
+  website_url: string | null;
+  app_url: string | null;
+  favicon_url: string | null;
 };
 
 type UserOption = {
@@ -47,6 +50,9 @@ function FarmSetup({ session }: Props) {
         admin_user_id: null,
         email: '',
         phone: '',
+        website_url: '',
+        app_url: '',
+        favicon_url: '',
       }
     );
   }, [farm]);
@@ -78,7 +84,9 @@ function FarmSetup({ session }: Props) {
         await Promise.all([
           supabase
             .from('farms')
-            .select('id, name, admin_user_id, email, phone')
+            .select(
+              'id, name, admin_user_id, email, phone, website_url, app_url, favicon_url',
+            )
             .order('created_at', { ascending: true })
             .limit(1)
             .maybeSingle(),
@@ -122,6 +130,9 @@ function FarmSetup({ session }: Props) {
       admin_user_id: farmState.admin_user_id || null,
       email: farmState.email || null,
       phone: farmState.phone || null,
+      website_url: farmState.website_url || null,
+      app_url: farmState.app_url || null,
+      favicon_url: farmState.favicon_url || null,
     };
 
     const { error: upsertError } = await supabase.from('farms').upsert(payload);
@@ -138,7 +149,7 @@ function FarmSetup({ session }: Props) {
   if (role !== 'admin' && !loading) {
     return (
       <>
-        <Nav session={session} email={session.user.email} />
+        <Nav session={session} email={session.user.email} pageTitle="Farm Setup" />
         <div className="app">
           <div className="card stack">
             <h1>Farm Setup</h1>
@@ -151,7 +162,7 @@ function FarmSetup({ session }: Props) {
 
   return (
     <>
-      <Nav session={session} email={session.user.email} />
+      <Nav session={session} email={session.user.email} pageTitle="Farm Setup" />
       <div className="app">
         <div className="card stack">
           <h1>Farm Setup</h1>
@@ -213,6 +224,62 @@ function FarmSetup({ session }: Props) {
                   }
                   placeholder="555-123-4567"
                 />
+              </label>
+
+              <label className="stack">
+                <span>Farm website</span>
+                <input
+                  type="url"
+                  value={farmState.website_url ?? ''}
+                  onChange={(e) =>
+                    setFarm({ ...farmState, website_url: e.target.value })
+                  }
+                  placeholder="https://example.com"
+                />
+              </label>
+
+              <label className="stack">
+                <span>Farm app URL</span>
+                <input
+                  type="url"
+                  value={farmState.app_url ?? ''}
+                  onChange={(e) =>
+                    setFarm({ ...farmState, app_url: e.target.value })
+                  }
+                  placeholder="https://app.example.com"
+                />
+              </label>
+
+              <label className="stack">
+                <span>Favicon URL</span>
+                <input
+                  type="url"
+                  value={farmState.favicon_url ?? ''}
+                  onChange={(e) =>
+                    setFarm({ ...farmState, favicon_url: e.target.value })
+                  }
+                  placeholder="https://example.com/favicon.ico"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!farmState.website_url) {
+                      setError('Website URL required to fetch favicon.');
+                      return;
+                    }
+                    try {
+                      const url = new URL(farmState.website_url);
+                      const favicon = `https://www.google.com/s2/favicons?domain=${url.hostname}`;
+                      setFarm({ ...farmState, favicon_url: favicon });
+                      setStatus('Favicon set from website.');
+                      setError(null);
+                    } catch (_err) {
+                      setError('Website URL is invalid for favicon.');
+                    }
+                  }}
+                >
+                  Fetch favicon from website
+                </button>
               </label>
 
               <button type="submit" disabled={saving || role !== 'admin'}>

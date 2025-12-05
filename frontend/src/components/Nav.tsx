@@ -6,9 +6,10 @@ import { supabase } from '../lib/supabaseClient';
 type NavProps = {
   session?: Session;
   email?: string;
+  pageTitle?: string;
 };
 
-function Nav({ session, email }: NavProps) {
+function Nav({ session, email, pageTitle }: NavProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
@@ -36,6 +37,13 @@ function Nav({ session, email }: NavProps) {
       active = false;
     };
   }, [session?.user]);
+
+  useEffect(() => {
+    const baseTitle = 'Farm Kit';
+    const farm = farmName ? `${farmName} | ` : '';
+    const page = pageTitle ? `${pageTitle} | ` : '';
+    document.title = `${page}${farm}${baseTitle}`;
+  }, [farmName, pageTitle]);
 
   const handleLogout = async () => {
     setLoading(true);

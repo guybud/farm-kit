@@ -209,7 +209,7 @@ function ManageUsers({ session }: Props) {
   if (!isAdmin && !loading) {
     return (
       <>
-        <Nav session={session} email={session.user.email} />
+        <Nav session={session} email={session.user.email} pageTitle="Manage Users" />
         <div className="app">
           <div className="card stack">
             <h1>Manage Users</h1>
@@ -222,7 +222,7 @@ function ManageUsers({ session }: Props) {
 
   return (
     <>
-      <Nav session={session} email={session.user.email} />
+      <Nav session={session} email={session.user.email} pageTitle="Manage Users" />
       <div className="app">
         <div className="card stack">
           <h1>Manage Users</h1>

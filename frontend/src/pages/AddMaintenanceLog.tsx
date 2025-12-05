@@ -103,7 +103,7 @@ function AddMaintenanceLog({ session }: Props) {
 
   return (
     <>
-      <Nav session={session} email={session.user.email} />
+      <Nav session={session} email={session.user.email} pageTitle="Add Maintenance Log" />
       <div className="app">
         <div className="card">
           <h1>Add Maintenance Log</h1>

@@ -45,6 +45,9 @@ create table if not exists public.farms (
   admin_user_id uuid references public.app_users(id) on delete set null,
   email text,
   phone text,
+  website_url text,
+  app_url text,
+  favicon_url text,
   created_at timestamptz not null default now()
 );
 
@@ -109,5 +112,8 @@ create table if not exists public.farms (
   admin_user_id uuid references public.app_users(id) on delete set null,
   email text,
   phone text,
+  website_url text,
+  app_url text,
+  favicon_url text,
   created_at timestamptz not null default now()
 );

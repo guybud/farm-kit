@@ -53,7 +53,7 @@ function AddEquipment({ session }: Props) {
 
   return (
     <>
-      <Nav session={session} email={session.user.email} />
+      <Nav session={session} email={session.user.email} pageTitle="Add Equipment" />
       <div className="app">
         <div className="card">
           <h1>Add Equipment</h1>

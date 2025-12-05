@@ -54,7 +54,7 @@ function EquipmentPage({ session }: EquipmentPageProps) {
 
   return (
     <>
-      <Nav session={session} email={session.user.email} />
+      <Nav session={session} email={session.user.email} pageTitle="Equipment" />
       <div className="app">
         <div className="card stack">
           <div className="stack" style={{ alignItems: 'flex-start' }}>

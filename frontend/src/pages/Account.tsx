@@ -100,7 +100,7 @@ function Account({ session }: Props) {
 
   return (
     <>
-      <Nav session={session} email={session.user.email} />
+      <Nav session={session} email={session.user.email} pageTitle="Account" />
       <div className="app">
         <div className="card stack">
           <h1>Account</h1>

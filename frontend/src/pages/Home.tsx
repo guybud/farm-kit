@@ -25,7 +25,7 @@ function Home({ session }: Props) {
 
   return (
     <>
-      <Nav session={session} email={session.user.email} />
+      <Nav session={session} email={session.user.email} pageTitle="Home" />
       <div className="app">
         <div className="card stack">
           <h1>Dashboard</h1>
