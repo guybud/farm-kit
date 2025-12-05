@@ -59,7 +59,9 @@ create table if not exists public.app_users (
   last_name text,
   email text not null unique,
   role text not null check (role in ('admin', 'user')),
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  last_modified_at timestamptz,
+  last_modified_by_id uuid references public.app_users(id) on delete set null
 );
 
 -- maintenance_logs
@@ -97,7 +99,9 @@ alter table if exists public.maintenance_logs
 
 alter table if exists public.app_users
   add column if not exists first_name text,
-  add column if not exists last_name text;
+  add column if not exists last_name text,
+  add column if not exists last_modified_at timestamptz,
+  add column if not exists last_modified_by_id uuid references public.app_users(id) on delete set null;
 
 create table if not exists public.farms (
   id uuid primary key default gen_random_uuid(),

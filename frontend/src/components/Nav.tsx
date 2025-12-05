@@ -63,6 +63,7 @@ function Nav({ session, email }: NavProps) {
         <Link to="/maintenance/add">Add Maintenance Log</Link>
         <Link to="/account">Account</Link>
         <Link to="/farm">Farm Setup</Link>
+        <Link to="/users">Users</Link>
         <span style={{ flex: 1 }} />
         <button onClick={handleLogout} disabled={loading}>
           {loading ? 'Signing out...' : 'Logout'}

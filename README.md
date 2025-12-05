@@ -78,6 +78,8 @@ Farm Kit is a simple web app that helps farms track equipment, log maintenance, 
 | email        | text      | unique                     |
 | role         | text      | e.g. admin, user           |
 | created_at   | timestamp |                           |
+| last_modified_at | timestamptz | optional            |
+| last_modified_by_id | uuid    | FK to app_users      |
 
 ### maintenance_logs
 | field            | type        | notes                         |
