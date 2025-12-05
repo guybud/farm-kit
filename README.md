@@ -168,3 +168,4 @@ Early development (Alpha). Expect changes as the app takes shape.
 
 ## Release notes
 - 0.0.4: First live deploy (alpha)
+- 0.0.6: Responsive nav and UI polish for mobile/tablet
