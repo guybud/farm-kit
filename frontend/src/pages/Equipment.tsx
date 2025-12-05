@@ -188,7 +188,8 @@ function EquipmentPage({ session }: EquipmentPageProps) {
       .select('*')
       .eq('equipment_id', item.id)
       .order('maintenance_date', { ascending: false })
-      .order('logged_at', { ascending: false });
+      .order('logged_at', { ascending: false })
+      .limit(5);
     if (logsErr) {
       setLogsError(logsErr.message);
       setLogs([]);
@@ -441,22 +442,22 @@ function EquipmentPage({ session }: EquipmentPageProps) {
                       </tr>
                     </thead>
                     <tbody>
-                      {logs.map((log) => (
-                        <tr key={log.id}>
-                          <td>{log.maintenance_date ?? '-'}</td>
-                          <td>{log.title}</td>
-                          <td>{log.description ?? '-'}</td>
-                          <td>{log.status ?? '-'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
+                {logs.map((log) => (
+                  <tr key={log.id}>
+                    <td>{log.maintenance_date ?? '-'}</td>
+                    <td>{log.title}</td>
+                    <td>{log.description ?? '-'}</td>
+                    <td>{log.status ?? '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
 
-              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                {isAdmin && (
-                  <>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {isAdmin && (
+            <>
                     <button
                       type="button"
                       onClick={() => {
@@ -483,16 +484,28 @@ function EquipmentPage({ session }: EquipmentPageProps) {
                         setShowDetails(false);
                         navigate(`/maintenance/add?equipment_id=${selectedEquipment.id}`);
                       }}
-                    >
-                      Edit logs
-                    </button>
-                  </>
-                )}
-                <button
-                  type="button"
-                  style={{ background: '#ccc', color: '#000' }}
-                  onClick={() => {
-                    setShowDetails(false);
+                >
+                  Edit logs
+                </button>
+              </>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                if (!selectedEquipment) return;
+                const slug = encodeURIComponent(
+                  selectedEquipment.nickname || selectedEquipment.id,
+                );
+                navigate(`/equipment/${slug}`);
+              }}
+            >
+              Detailed view
+            </button>
+            <button
+              type="button"
+              style={{ background: '#ccc', color: '#000' }}
+              onClick={() => {
+                setShowDetails(false);
                     setSelectedEquipment(null);
                   }}
                 >

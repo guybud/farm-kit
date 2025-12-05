@@ -19,7 +19,7 @@ function Nav({ session, email, pageTitle }: NavProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<
-    { id: string; title: string; subtitle: string }[]
+    { id: string; title: string; subtitle: string; slug: string }[]
   >([]);
   const navigate = useNavigate();
 
@@ -69,6 +69,46 @@ function Nav({ session, email, pageTitle }: NavProps) {
     }
     link.href = farmFavicon;
   }, [farmFavicon]);
+  
+  useEffect(() => {
+    let active = true;
+    const runSearch = async () => {
+      if (!searchTerm.trim()) {
+        setSearchResults([]);
+        return;
+      }
+      const { data, error } = await supabase
+        .from('equipment')
+        .select('id, nickname, unit_number, category, make, model')
+        .or(
+          `nickname.ilike.%${searchTerm}%,unit_number.ilike.%${searchTerm}%,category.ilike.%${searchTerm}%,make.ilike.%${searchTerm}%,model.ilike.%${searchTerm}%`,
+        )
+        .order('nickname', { ascending: true })
+        .limit(10);
+      if (!active) return;
+      if (error) {
+        setSearchResults([]);
+      } else {
+        const mapped =
+          data?.map((row) => {
+            const title = row.nickname || row.model || 'Equipment';
+            return {
+              id: row.id,
+              title,
+              subtitle: [row.category, row.make, row.model, row.unit_number ? `Unit ${row.unit_number}` : null]
+                .filter(Boolean)
+                .join(' • '),
+              slug: encodeURIComponent(row.nickname || row.id),
+            };
+          }) ?? [];
+        setSearchResults(mapped);
+      }
+    };
+    runSearch();
+    return () => {
+      active = false;
+    };
+  }, [searchTerm]);
 
   const handleLogout = async () => {
     setLoading(true);
@@ -221,8 +261,21 @@ function Nav({ session, email, pageTitle }: NavProps) {
             />
             {searchTerm.trim() && (
               <div className="search-popover">
-                {searchResults.slice(0, 10).map((res) => (
-                  <div key={res.id} className="search-item">
+                {searchResults.length === 0 && (
+                  <div className="search-item" style={{ color: '#475569' }}>
+                    No matches
+                  </div>
+                )}
+                {searchResults.map((res) => (
+                  <div
+                    key={res.id}
+                    className="search-item"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      navigate(`/equipment/${res.slug}`);
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
                     <div style={{ fontWeight: 700 }}>{res.title}</div>
                     <div style={{ fontSize: '0.85rem', color: '#475569' }}>
                       {res.subtitle}

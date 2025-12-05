@@ -11,6 +11,7 @@ import Account from './pages/Account';
 import FarmSetup from './pages/FarmSetup';
 import ManageUsers from './pages/ManageUsers';
 import SearchPage from './pages/Search';
+import EquipmentDetail from './pages/EquipmentDetail';
 
 const APP_VERSION = '0.0.6';
 
@@ -87,12 +88,20 @@ function App() {
                 <Equipment session={session as Session} />
               </RequireAuth>
             }
-          />
-          <Route
-            path="/maintenance/add"
-            element={
-              <RequireAuth session={session}>
-                <AddMaintenanceLog session={session as Session} />
+        />
+        <Route
+          path="/equipment/:slug"
+          element={
+            <RequireAuth session={session}>
+              <EquipmentDetail session={session as Session} />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/maintenance/add"
+          element={
+            <RequireAuth session={session}>
+              <AddMaintenanceLog session={session as Session} />
               </RequireAuth>
             }
           />
