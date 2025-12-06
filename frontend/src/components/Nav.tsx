@@ -204,12 +204,6 @@ function Nav({ session, email, pageTitle }: NavProps) {
           <Link className="nav-btn" to="/maintenance/add" onClick={closeMenu}>
             Log Maintenance
           </Link>
-          <Link className="nav-btn" to="/farm" onClick={closeMenu}>
-            Farm Setup
-          </Link>
-          <Link className="nav-btn" to="/users" onClick={closeMenu}>
-            Users
-          </Link>
         </div>
       </div>
       <div
@@ -339,12 +333,6 @@ function Nav({ session, email, pageTitle }: NavProps) {
               </Link>
               <Link className="nav-btn" to="/maintenance/add" onClick={closeMenu}>
                 Log Maintenance
-              </Link>
-              <Link className="nav-btn" to="/farm" onClick={closeMenu}>
-                Farm Setup
-              </Link>
-              <Link className="nav-btn" to="/users" onClick={closeMenu}>
-                Users
               </Link>
               <Link className="nav-btn" to="/search" onClick={closeMenu}>
                 Advanced Search
