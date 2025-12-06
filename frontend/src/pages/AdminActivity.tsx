@@ -11,6 +11,7 @@ type Activity = {
   logged_at: string;
   description: string | null;
   created_by_id: string | null;
+  user?: { name: string | null } | null;
 };
 
 function AdminActivity({ session }: Props) {
@@ -45,7 +46,7 @@ function AdminActivity({ session }: Props) {
       }
       const { data, error: err } = await supabase
         .from('maintenance_logs')
-        .select('id, title, logged_at, description, created_by_id')
+        .select('id, title, logged_at, description, created_by_id, user:created_by_id(name)')
         .order('logged_at', { ascending: false })
         .limit(50);
       if (!active) return;
@@ -53,7 +54,12 @@ function AdminActivity({ session }: Props) {
         setError(err.message);
         setActivity([]);
       } else {
-        setActivity((data as Activity[]) ?? []);
+        const mapped =
+          data?.map((row: any) => ({
+            ...row,
+            user: Array.isArray(row.user) ? row.user[0] ?? null : row.user ?? null,
+          })) ?? [];
+        setActivity(mapped as Activity[]);
       }
       setLoading(false);
     };
@@ -81,6 +87,7 @@ function AdminActivity({ session }: Props) {
                 <table>
                   <thead>
                     <tr>
+                      <th>User</th>
                       <th>Title</th>
                       <th>Description</th>
                       <th>Logged at</th>
@@ -89,6 +96,7 @@ function AdminActivity({ session }: Props) {
                   <tbody>
                     {activity.map((row) => (
                       <tr key={row.id}>
+                        <td>{row.user?.name || '-'}</td>
                         <td>{row.title}</td>
                         <td>{row.description ?? '-'}</td>
                         <td>{row.logged_at}</td>

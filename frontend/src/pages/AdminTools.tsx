@@ -10,7 +10,7 @@ function AdminTools({ session }: Props) {
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [activity, setActivity] = useState<
-    { id: string; created_by_id: string | null; title: string; logged_at: string }[]
+    { id: string; created_by_id: string | null; title: string; logged_at: string; user_name: string | null }[]
   >([]);
   const [activityError, setActivityError] = useState<string | null>(null);
 
@@ -38,7 +38,7 @@ function AdminTools({ session }: Props) {
       if (role !== 'admin') return;
       const { data, error } = await supabase
         .from('maintenance_logs')
-        .select('id, created_by_id, title, logged_at')
+        .select('id, created_by_id, title, logged_at, user:created_by_id(name)')
         .order('logged_at', { ascending: false })
         .limit(10);
       if (!active) return;
@@ -94,6 +94,7 @@ function AdminTools({ session }: Props) {
                   <table>
                     <thead>
                       <tr>
+                        <th>User</th>
                         <th>Title</th>
                         <th>Logged at</th>
                       </tr>
@@ -101,6 +102,7 @@ function AdminTools({ session }: Props) {
                     <tbody>
                       {activity.map((row) => (
                         <tr key={row.id}>
+                          <td>{(row as any).user?.name || '-'}</td>
                           <td>{row.title}</td>
                           <td>{row.logged_at}</td>
                         </tr>
