@@ -36,18 +36,52 @@ Farm Kit is a simple web app that helps farms track equipment, log maintenance, 
 ## Data model (current)
 
 ### locations
-| field     | type | notes         |
-|-----------|------|---------------|
-| id        | uuid | primary key   |
-| name      | text | required      |
-| farm_name | text | optional      |
-| notes     | text | optional      |
+| field                       | type      | notes                           |
+|-----------------------------|-----------|---------------------------------|
+| id                          | uuid      | primary key                     |
+| farm_id                     | uuid      | FK to farms                     |
+| name                        | text      | required                        |
+| code                        | text      | optional                        |
+| is_primary                  | boolean   | default false                   |
+| address_line1/2             | text      | optional                        |
+| city/province/postal_code   | text      | optional                        |
+| country                     | text      | default 'Canada'                |
+| nearest_town                | text      | optional                        |
+| nearest_hospital_name       | text      | optional                        |
+| nearest_hospital_distance_km| numeric   | optional                        |
+| primary_contact_name/phone  | text      | optional                        |
+| emergency_instructions      | text      | optional                        |
+| has_fuel_storage            | boolean   | default false                   |
+| has_chemical_storage        | boolean   | default false                   |
+| notes                       | text      | optional                        |
+| created_at                  | timestamptz |                                 |
+| last_modified_at/by         | timestamptz/uuid | optional                |
+
+### buildings
+| field                | type    | notes                         |
+|----------------------|---------|-------------------------------|
+| id                   | uuid    | primary key                   |
+| farm_id              | uuid    | FK to farms                   |
+| location_id          | uuid    | FK to locations               |
+| name                 | text    | required                      |
+| code                 | text    | optional                      |
+| type                 | text    | optional                      |
+| description          | text    | optional                      |
+| capacity             | text    | optional                      |
+| year_built           | int     | optional                      |
+| heated               | boolean | optional                      |
+| has_water            | boolean | optional                      |
+| has_three_phase_power| boolean | optional                      |
+| notes                | text    | optional                      |
+| created_at           | timestamptz |                             |
+| last_modified_at/by  | timestamptz/uuid | optional              |
 
 ### equipment
 | field                | type   | notes                                   |
 |----------------------|--------|-----------------------------------------|
 | id                   | uuid   | primary key                             |
-| location_id          | uuid   | FK to locations                         |
+| location_id          | uuid   | FK to locations (nullable)              |
+| building_id          | uuid   | FK to buildings (nullable)              |
 | category             | text   | tractor, auger, piler, etc.             |
 | make                 | text   | manufacturer                            |
 | model                | text   | model name/number                       |
@@ -96,51 +130,27 @@ Farm Kit is a simple web app that helps farms track equipment, log maintenance, 
 | next_due_at      | timestamptz | optional                      |
 
 ### farms
-| field          | type        | notes                         |
-|----------------|-------------|-------------------------------|
-| id             | uuid        | primary key                   |
-| name           | text        | required                      |
-| admin_user_id  | uuid        | FK to app_users               |
-| email          | text        | optional                      |
-| phone          | text        | optional                      |
-| website_url    | text        | optional                      |
-| app_url        | text        | optional                      |
-| favicon_url    | text        | optional (derived from site)  |
-| logo_url       | text        | optional (displayed in header)|
-| created_at     | timestamptz |                               |
+| field           | type        | notes                               |
+|-----------------|-------------|-------------------------------------|
+| id              | uuid        | primary key                         |
+| name            | text        | required                            |
+| admin_user_id   | uuid        | FK to app_users                     |
+| hq_location_id  | uuid        | FK to locations (nullable)          |
+| email           | text        | optional                            |
+| phone           | text        | optional                            |
+| website_url     | text        | optional                            |
+| app_url         | text        | optional                            |
+| favicon_url     | text        | optional (derived from site)        |
+| logo_url        | text        | optional (displayed in header)      |
+| created_at      | timestamptz |                                     |
 
 ---
 
 ## Seeding the database
 
-1) Apply schema changes (run once):
-```sql
-alter table if exists public.equipment
-  add column if not exists unit_number text,
-  add column if not exists vin_sn text,
-  add column if not exists year_of_purchase integer,
-  add column if not exists license_class text,
-  add column if not exists next_service_at date,
-  add column if not exists cvip_expires_at date,
-  add column if not exists insurance_expires_at date,
-  add column if not exists oil_filter_number text,
-  add column if not exists fuel_filter_number text,
-  add column if not exists air_filter_number text;
-
-alter table if exists public.maintenance_logs
-  add column if not exists maintenance_date date;
-
-alter table if exists public.app_users
-  add column if not exists first_name text,
-  add column if not exists last_name text,
-  add column if not exists last_modified_at timestamptz,
-  add column if not exists last_modified_by_id uuid references public.app_users(id) on delete set null;
-```
-2) Seed sample data:
 - Supabase SQL editor: run `supabase/seed_sample_data.sql`
 - Or `psql "$SUPABASE_DB_URL" -f supabase/seed_sample_data.sql`
-
-3) Refresh the app at `http://localhost:5173/` (logged in) to see seeded records.
+- Refresh the app at `http://localhost:5173/` (logged in) to see seeded records.
 
 ## Inviting users (server-side)
 - Requires service role key (never expose to frontend).
@@ -170,3 +180,4 @@ Early development (Alpha). Expect changes as the app takes shape.
 - 0.0.4: First live deploy (alpha)
 - 0.0.5: Equipment slug routing, quick search updates
 - 0.0.6: Responsive nav polish for mobile/tablet
+- 0.0.7: Locations/Buildings UI, Admin Tools + activity feed, primary “Add Log” button
