@@ -17,6 +17,7 @@ import LocationDetail from './pages/LocationDetail';
 import Buildings from './pages/Buildings';
 import BuildingDetail from './pages/BuildingDetail';
 import AdminTools from './pages/AdminTools';
+import AdminActivity from './pages/AdminActivity';
 
 const APP_VERSION = '0.0.6';
 
@@ -171,6 +172,14 @@ function App() {
           element={
             <RequireAuth session={session}>
               <AdminTools session={session as Session} />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/admin/activity"
+          element={
+            <RequireAuth session={session}>
+              <AdminActivity session={session as Session} />
             </RequireAuth>
           }
         />
