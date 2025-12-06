@@ -63,8 +63,6 @@ create table if not exists public.locations (
   last_modified_by_id uuid references public.app_users(id) on delete set null
 );
 
-create index if not exists locations_farm_id_idx on public.locations (farm_id);
-
 -- farms.hq_location_id (added after locations exist to avoid circular dependency)
 alter table if exists public.farms
   add column if not exists hq_location_id uuid references public.locations(id) on delete set null;
@@ -170,27 +168,6 @@ alter table if exists public.locations
   add column if not exists last_modified_by_id uuid references public.app_users(id) on delete set null;
 
 create index if not exists locations_farm_id_idx on public.locations (farm_id);
-
-create table if not exists public.buildings (
-  id uuid primary key default gen_random_uuid(),
-  farm_id uuid references public.farms(id) on delete cascade,
-  location_id uuid references public.locations(id) on delete cascade,
-  name text not null,
-  code text,
-  type text,
-  description text,
-  capacity text,
-  year_built int,
-  heated boolean,
-  has_water boolean,
-  has_three_phase_power boolean,
-  notes text,
-  created_at timestamptz default now(),
-  last_modified_at timestamptz,
-  last_modified_by_id uuid references public.app_users(id) on delete set null
-);
-
-create index if not exists buildings_location_id_idx on public.buildings (location_id);
 
 alter table if exists public.equipment
   add column if not exists location_id uuid references public.locations(id) on delete set null,
