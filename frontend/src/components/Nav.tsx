@@ -92,13 +92,19 @@ function Nav({ session, email, pageTitle }: NavProps) {
         const mapped =
           data?.map((row) => {
             const title = row.nickname || row.model || 'Equipment';
+            const base = row.nickname?.trim() || row.id;
+            const slug = base
+              .replace(/[^a-zA-Z0-9]+/g, '-')
+              .replace(/-+/g, '-')
+              .replace(/^-|-$/g, '')
+              .toLowerCase();
             return {
               id: row.id,
               title,
               subtitle: [row.category, row.make, row.model, row.unit_number ? `Unit ${row.unit_number}` : null]
                 .filter(Boolean)
-                .join(' • '),
-              slug: encodeURIComponent(row.nickname || row.id),
+                .join(' | '),
+              slug,
             };
           }) ?? [];
         setSearchResults(mapped);

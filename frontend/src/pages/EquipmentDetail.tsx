@@ -42,8 +42,44 @@ function EquipmentDetail({ session }: Props) {
   const [logs, setLogs] = useState<MaintenanceLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState<Partial<Equipment>>({});
 
   const decoded = useMemo(() => decodeURIComponent(slug ?? ''), [slug]);
+  const normalizedName = useMemo(
+    () => decoded.replace(/-/g, ' ').trim(),
+    [decoded],
+  );
+  const toSlug = (value: string | null) =>
+    (value ?? '')
+      .replace(/[^a-zA-Z0-9]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+      .toLowerCase();
+
+  const targetSlug = useMemo(() => toSlug(decoded), [decoded]);
+
+  useEffect(() => {
+    let active = true;
+    const loadProfile = async () => {
+      const { data, error } = await supabase
+        .from('app_users')
+        .select('role')
+        .eq('auth_user_id', session.user.id)
+        .maybeSingle();
+      if (!active) return;
+      if (error) {
+        setIsAdmin(false);
+      } else {
+        setIsAdmin(data?.role === 'admin');
+      }
+    };
+    loadProfile();
+    return () => {
+      active = false;
+    };
+  }, [session.user.id]);
 
   useEffect(() => {
     let active = true;
@@ -51,36 +87,75 @@ function EquipmentDetail({ session }: Props) {
       setLoading(true);
       setError(null);
 
-      let equipRes = await supabase
+      let found: Equipment | null = null;
+
+      // Broad candidate search: nickname variants + id match
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const orFilters = [
+        `nickname.ilike.%${normalizedName}%`,
+        `nickname.ilike.%${decoded}%`,
+        `nickname.eq.${normalizedName}`,
+        `nickname.eq.${decoded}`,
+      ];
+      if (uuidRegex.test(decoded)) {
+        orFilters.push(`id.eq.${decoded}`);
+      }
+
+      const { data: candidates, error: candErr } = await supabase
         .from('equipment')
         .select('*')
-        .eq('nickname', decoded)
-        .maybeSingle();
+        .or(orFilters.join(','))
+        .limit(30);
+      if (candErr) {
+        setError(candErr.message);
+        setLoading(false);
+        return;
+      }
 
-      if (!equipRes.data) {
-        equipRes = await supabase
+      if (candidates && candidates.length > 0) {
+        found =
+          candidates.find((row) => toSlug(row.nickname) === targetSlug) ??
+          candidates.find((row) => row.nickname?.toLowerCase() === normalizedName.toLowerCase()) ??
+          candidates[0];
+      }
+
+      // Try by UUID id if still not found
+      if (!found && uuidRegex.test(decoded)) {
+        const { data: byId } = await supabase
           .from('equipment')
           .select('*')
           .eq('id', decoded)
           .maybeSingle();
+        if (byId) {
+          found = byId;
+        }
       }
 
-      const equip = equipRes.data;
-      const equipErr = equipRes.error;
+      // Final fallback: grab a wider set and match by computed slug
+      if (!found) {
+        const { data: broad } = await supabase
+          .from('equipment')
+          .select('*')
+          .limit(500);
+        if (broad && broad.length > 0) {
+          found = broad.find((row) => toSlug(row.nickname) === targetSlug) ?? null;
+        }
+      }
+
       if (!active) return;
-      if (equipErr || !equip) {
-        setError(equipErr?.message ?? 'Equipment not found');
+      if (!found) {
+        setError('Equipment not found');
         setEquipment(null);
         setLogs([]);
         setLoading(false);
         return;
       }
-      setEquipment(equip as Equipment);
+      setEquipment(found as Equipment);
 
       const { data: logRows, error: logErr } = await supabase
         .from('maintenance_logs')
         .select('id, title, status, maintenance_date, logged_at, description')
-        .eq('equipment_id', equip.id)
+        .eq('equipment_id', found.id)
         .order('maintenance_date', { ascending: false })
         .order('logged_at', { ascending: false });
 
@@ -131,6 +206,17 @@ function EquipmentDetail({ session }: Props) {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
             <h1>{equipment.nickname ?? 'Equipment'}</h1>
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditing(true);
+                    setForm(equipment);
+                  }}
+                >
+                  Edit Equipment
+                </button>
+              )}
               <Link className="nav-btn" to={`/maintenance/add?equipment_id=${equipment.id}`}>
                 Log Maintenance
               </Link>
@@ -183,6 +269,229 @@ function EquipmentDetail({ session }: Props) {
           )}
         </div>
       </div>
+      {editing && (
+        <div className="modal-backdrop" onClick={() => setEditing(false)}>
+          <div
+            className="modal"
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: 'min(520px, 100%)' }}
+          >
+            <h2>Edit Equipment</h2>
+            <form
+              className="stack"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!equipment) return;
+                const payload = {
+                  nickname: form.nickname ?? equipment.nickname,
+                  category: form.category ?? equipment.category,
+                  make: form.make ?? equipment.make,
+                  model: form.model ?? equipment.model,
+                  unit_number: form.unit_number ?? equipment.unit_number,
+                  vin_sn: form.vin_sn ?? equipment.vin_sn,
+                  year: form.year ?? equipment.year,
+                  year_of_purchase: form.year_of_purchase ?? equipment.year_of_purchase,
+                  license_class: form.license_class ?? equipment.license_class,
+                  next_service_at: form.next_service_at ?? equipment.next_service_at,
+                  cvip_expires_at: form.cvip_expires_at ?? equipment.cvip_expires_at,
+                  insurance_expires_at: form.insurance_expires_at ?? equipment.insurance_expires_at,
+                  oil_filter_number: form.oil_filter_number ?? equipment.oil_filter_number,
+                  fuel_filter_number: form.fuel_filter_number ?? equipment.fuel_filter_number,
+                  air_filter_number: form.air_filter_number ?? equipment.air_filter_number,
+                };
+                const { error: updateErr } = await supabase
+                  .from('equipment')
+                  .update(payload)
+                  .eq('id', equipment.id);
+                if (!updateErr) {
+                  setEquipment({ ...equipment, ...payload });
+                  setEditing(false);
+                }
+              }}
+            >
+              <label className="stack">
+                <span>Nickname</span>
+                <input
+                  type="text"
+                  value={form.nickname ?? equipment.nickname ?? ''}
+                  onChange={(e) => setForm({ ...form, nickname: e.target.value })}
+                  required
+                />
+              </label>
+              <label className="stack">
+                <span>Category</span>
+                <input
+                  type="text"
+                  value={form.category ?? equipment.category ?? ''}
+                  onChange={(e) => setForm({ ...form, category: e.target.value })}
+                />
+              </label>
+              <label className="stack">
+                <span>Make</span>
+                <input
+                  type="text"
+                  value={form.make ?? equipment.make ?? ''}
+                  onChange={(e) => setForm({ ...form, make: e.target.value })}
+                />
+              </label>
+              <label className="stack">
+                <span>Model</span>
+                <input
+                  type="text"
+                  value={form.model ?? equipment.model ?? ''}
+                  onChange={(e) => setForm({ ...form, model: e.target.value })}
+                />
+              </label>
+              <label className="stack">
+                <span>Unit #</span>
+                <input
+                  type="text"
+                  value={form.unit_number ?? equipment.unit_number ?? ''}
+                  onChange={(e) => setForm({ ...form, unit_number: e.target.value })}
+                />
+              </label>
+              <label className="stack">
+                <span>VIN/SN</span>
+                <input
+                  type="text"
+                  value={form.vin_sn ?? equipment.vin_sn ?? ''}
+                  onChange={(e) => setForm({ ...form, vin_sn: e.target.value })}
+                />
+              </label>
+              <label className="stack">
+                <span>Year</span>
+                <input
+                  type="number"
+                  value={
+                    form.year !== undefined && form.year !== null
+                      ? form.year
+                      : equipment.year ?? ''
+                  }
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      year: e.target.value === '' ? null : Number(e.target.value),
+                    })
+                  }
+                />
+              </label>
+              <label className="stack">
+                <span>Year of purchase</span>
+                <input
+                  type="number"
+                  value={
+                    form.year_of_purchase !== undefined && form.year_of_purchase !== null
+                      ? form.year_of_purchase
+                      : equipment.year_of_purchase ?? ''
+                  }
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      year_of_purchase:
+                        e.target.value === '' ? null : Number(e.target.value),
+                    })
+                  }
+                />
+              </label>
+              <label className="stack">
+                <span>License class</span>
+                <input
+                  type="text"
+                  value={form.license_class ?? equipment.license_class ?? ''}
+                  onChange={(e) =>
+                    setForm({ ...form, license_class: e.target.value })
+                  }
+                />
+              </label>
+              <label className="stack">
+                <span>Next service</span>
+                <input
+                  type="date"
+                  value={
+                    (form.next_service_at as string) ??
+                    (equipment.next_service_at as string) ??
+                    ''
+                  }
+                  onChange={(e) =>
+                    setForm({ ...form, next_service_at: e.target.value || null })
+                  }
+                />
+              </label>
+              <label className="stack">
+                <span>CVIP expires</span>
+                <input
+                  type="date"
+                  value={
+                    (form.cvip_expires_at as string) ??
+                    (equipment.cvip_expires_at as string) ??
+                    ''
+                  }
+                  onChange={(e) =>
+                    setForm({ ...form, cvip_expires_at: e.target.value || null })
+                  }
+                />
+              </label>
+              <label className="stack">
+                <span>Insurance expires</span>
+                <input
+                  type="date"
+                  value={
+                    (form.insurance_expires_at as string) ??
+                    (equipment.insurance_expires_at as string) ??
+                    ''
+                  }
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      insurance_expires_at: e.target.value || null,
+                    })
+                  }
+                />
+              </label>
+              <label className="stack">
+                <span>Oil filter #</span>
+                <input
+                  type="text"
+                  value={form.oil_filter_number ?? equipment.oil_filter_number ?? ''}
+                  onChange={(e) =>
+                    setForm({ ...form, oil_filter_number: e.target.value })
+                  }
+                />
+              </label>
+              <label className="stack">
+                <span>Fuel filter #</span>
+                <input
+                  type="text"
+                  value={form.fuel_filter_number ?? equipment.fuel_filter_number ?? ''}
+                  onChange={(e) =>
+                    setForm({ ...form, fuel_filter_number: e.target.value })
+                  }
+                />
+              </label>
+              <label className="stack">
+                <span>Air filter #</span>
+                <input
+                  type="text"
+                  value={form.air_filter_number ?? equipment.air_filter_number ?? ''}
+                  onChange={(e) =>
+                    setForm({ ...form, air_filter_number: e.target.value })
+                  }
+                />
+              </label>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button type="submit">Save</button>
+                <button
+                  type="button"
+                  style={{ background: '#ccc', color: '#000' }}
+                  onClick={() => setEditing(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 }

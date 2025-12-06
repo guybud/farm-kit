@@ -131,6 +131,15 @@ function EquipmentPage({ session }: EquipmentPageProps) {
     if (!err) setEquipment(data ?? []);
   };
 
+  const toSlug = (value: string | null, fallback: string) => {
+    const base = value?.trim() || fallback;
+    return base
+      .replace(/[^a-zA-Z0-9]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+      .toLowerCase();
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setSaving(true);
@@ -484,23 +493,21 @@ function EquipmentPage({ session }: EquipmentPageProps) {
                         setShowDetails(false);
                         navigate(`/maintenance/add?equipment_id=${selectedEquipment.id}`);
                       }}
+                    >
+                      Edit logs
+                    </button>
+                  </>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!selectedEquipment) return;
+                    const slug = toSlug(selectedEquipment.nickname, selectedEquipment.id);
+                    navigate(`/equipment/${slug}`);
+                  }}
                 >
-                  Edit logs
+                  Detailed view
                 </button>
-              </>
-            )}
-            <button
-              type="button"
-              onClick={() => {
-                if (!selectedEquipment) return;
-                const slug = encodeURIComponent(
-                  selectedEquipment.nickname || selectedEquipment.id,
-                );
-                navigate(`/equipment/${slug}`);
-              }}
-            >
-              Detailed view
-            </button>
             <button
               type="button"
               style={{ background: '#ccc', color: '#000' }}

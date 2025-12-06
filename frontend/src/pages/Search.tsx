@@ -23,7 +23,7 @@ function SearchPage({ session }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   const categories = useMemo(
-    () => Array.from(new Set(results.map((r) => r.type === 'equipment' ? r.subtitle.split(' • ')[0] : null).filter(Boolean) as string[])),
+    () => Array.from(new Set(results.map((r) => r.type === 'equipment' ? r.subtitle.split(' | ')[0] : null).filter(Boolean) as string[])),
     [results],
   );
 
@@ -37,35 +37,26 @@ function SearchPage({ session }: Props) {
       setLoading(true);
       setError(null);
 
-      const queries: Promise<any>[] = [];
+      const emptyRes = { data: [], error: null as any };
+      const equipRes =
+        typeFilter === 'all' || typeFilter === 'equipment'
+          ? await supabase
+              .from('equipment')
+              .select('id, nickname, unit_number, category, make, model')
+              .or(
+                `nickname.ilike.%${term}%,unit_number.ilike.%${term}%,category.ilike.%${term}%,make.ilike.%${term}%,model.ilike.%${term}%`,
+              )
+              .limit(20)
+          : emptyRes;
 
-      if (typeFilter === 'all' || typeFilter === 'equipment') {
-        queries.push(
-          supabase
-            .from('equipment')
-            .select('id, nickname, unit_number, category, make, model')
-            .or(
-              `nickname.ilike.%${term}%,unit_number.ilike.%${term}%,category.ilike.%${term}%,make.ilike.%${term}%,model.ilike.%${term}%`,
-            )
-            .limit(20),
-        );
-      } else {
-        queries.push(Promise.resolve({ data: [] }));
-      }
-
-      if (typeFilter === 'all' || typeFilter === 'maintenance') {
-        queries.push(
-          supabase
-            .from('maintenance_logs')
-            .select('id, title, description, equipment:equipment_id(nickname, unit_number)')
-            .or(`title.ilike.%${term}%,description.ilike.%${term}%`)
-            .limit(20),
-        );
-      } else {
-        queries.push(Promise.resolve({ data: [] }));
-      }
-
-      const [equipRes, maintRes] = await Promise.all(queries);
+      const maintRes =
+        typeFilter === 'all' || typeFilter === 'maintenance'
+          ? await supabase
+              .from('maintenance_logs')
+              .select('id, title, description, equipment:equipment_id(nickname, unit_number)')
+              .or(`title.ilike.%${term}%,description.ilike.%${term}%`)
+              .limit(20)
+          : emptyRes;
       if (!active) return;
 
       if (equipRes.error) {
@@ -87,17 +78,18 @@ function SearchPage({ session }: Props) {
           title: row.nickname || row.model || 'Equipment',
           subtitle: [row.category, row.make, row.model, row.unit_number ? `Unit ${row.unit_number}` : null]
             .filter(Boolean)
-            .join(' • '),
+            .join(' | '),
         }));
 
-      const maintResults: SearchResult[] = (maintRes.data ?? []).map((row: any) => ({
-        id: row.id,
-        type: 'maintenance',
-        title: row.title,
-        subtitle: row.equipment?.unit_number
-          ? `Unit ${row.equipment.unit_number}`
-          : row.equipment?.nickname || 'Maintenance',
-      }));
+      const maintResults: SearchResult[] = (maintRes.data ?? []).map((row: any) => {
+        const equip = Array.isArray(row.equipment) ? row.equipment[0] : row.equipment;
+        return {
+          id: row.id,
+          type: 'maintenance',
+          title: row.title,
+          subtitle: equip?.unit_number ? `Unit ${equip.unit_number}` : equip?.nickname || 'Maintenance',
+        };
+      });
 
       setResults([...equipResults, ...maintResults]);
       setLoading(false);

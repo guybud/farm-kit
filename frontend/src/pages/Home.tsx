@@ -94,7 +94,12 @@ function Home({ session }: Props) {
         setLogsError(error.message);
         setLogs([]);
       } else {
-        setLogs(data ?? []);
+        const rows =
+          data?.map((row: any) => ({
+            ...row,
+            equipment: Array.isArray(row.equipment) ? row.equipment[0] ?? null : row.equipment,
+          })) ?? [];
+        setLogs(rows as MaintenanceLogRow[]);
       }
       setLogsLoading(false);
     };
