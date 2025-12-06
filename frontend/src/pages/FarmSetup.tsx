@@ -19,6 +19,25 @@ type Farm = {
   logo_url: string | null;
 };
 
+type Location = {
+  id?: string;
+  farm_id: string | null;
+  name: string;
+  code: string | null;
+  is_primary: boolean;
+  address_line1: string | null;
+  address_line2: string | null;
+  city: string | null;
+  province: string | null;
+  postal_code: string | null;
+  country: string | null;
+  nearest_town: string | null;
+  nearest_hospital_name: string | null;
+  nearest_hospital_distance_km: number | null;
+  emergency_instructions: string | null;
+  notes: string | null;
+};
+
 type UserOption = {
   id: string;
   name: string | null;
@@ -30,11 +49,14 @@ type UserOption = {
 function FarmSetup({ session }: Props) {
   const [role, setRole] = useState<string | null>(null);
   const [farm, setFarm] = useState<Farm | null>(null);
+  const [location, setLocation] = useState<Location | null>(null);
   const [users, setUsers] = useState<UserOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingLocation, setSavingLocation] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState('');
+  const [locationStatus, setLocationStatus] = useState('');
 
   const adminName = (user: UserOption) => {
     const name =
@@ -58,6 +80,57 @@ function FarmSetup({ session }: Props) {
       }
     );
   }, [farm]);
+
+  const locationState = useMemo(() => {
+    return (
+      location ?? {
+        farm_id: farmState.id ?? null,
+        name: farmState.name ? `${farmState.name} HQ` : 'Primary Location',
+        code: '',
+        is_primary: true,
+        address_line1: '',
+        address_line2: '',
+        city: '',
+        province: '',
+        postal_code: '',
+        country: 'Canada',
+        nearest_town: '',
+        nearest_hospital_name: '',
+        nearest_hospital_distance_km: null,
+        emergency_instructions: '',
+        notes: '',
+      }
+    );
+  }, [location, farmState.id, farmState.name]);
+
+  const ensurePrimaryLocation = async (farmId: string, farmName?: string) => {
+    const { data } = await supabase
+      .from('locations')
+      .select('*')
+      .eq('farm_id', farmId)
+      .order('is_primary', { ascending: false })
+      .order('created_at', { ascending: true })
+      .limit(1);
+    if (data && data.length > 0) {
+      setLocation(data[0] as Location);
+      return data[0] as Location;
+    }
+    const insertPayload = {
+      farm_id: farmId,
+      name: farmName ? `${farmName} HQ` : 'Primary Location',
+      is_primary: true,
+    };
+    const { data: inserted, error: insertErr } = await supabase
+      .from('locations')
+      .insert(insertPayload)
+      .select()
+      .maybeSingle();
+    if (!insertErr && inserted) {
+      setLocation(inserted as Location);
+      return inserted as Location;
+    }
+    return null;
+  };
 
   useEffect(() => {
     let active = true;
@@ -103,6 +176,9 @@ function FarmSetup({ session }: Props) {
         setError(farmErr.message);
       } else {
         setFarm(farmData ?? null);
+        if (farmData?.id) {
+          await ensurePrimaryLocation(farmData.id, farmData.name ?? undefined);
+        }
       }
       if (usersErr) {
         setError(usersErr.message);
@@ -138,15 +214,51 @@ function FarmSetup({ session }: Props) {
       logo_url: farmState.logo_url || null,
     };
 
-    const { error: upsertError } = await supabase.from('farms').upsert(payload);
-    if (upsertError) {
-      setError(upsertError.message);
+    const { data: saved, error: upsertError } = await supabase
+      .from('farms')
+      .upsert(payload)
+      .select()
+      .maybeSingle();
+    if (upsertError || !saved) {
+      setError(upsertError?.message ?? 'Unable to save farm');
       setSaving(false);
       return;
     }
 
+    setFarm(saved as Farm);
+    if (saved.id) {
+      await ensurePrimaryLocation(saved.id, saved.name);
+    }
     setStatus('Farm settings saved.');
     setSaving(false);
+  };
+
+  const handleLocationSave = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (role !== 'admin') return;
+    if (!farmState.id) {
+      setLocationStatus('Save farm first.');
+      return;
+    }
+    setSavingLocation(true);
+    setLocationStatus('');
+    const payload = {
+      ...locationState,
+      farm_id: farmState.id,
+      is_primary: true,
+    };
+    const { data, error: locErr } = await supabase
+      .from('locations')
+      .upsert(payload)
+      .select()
+      .maybeSingle();
+    if (locErr) {
+      setLocationStatus(locErr.message);
+    } else {
+      setLocation(data as Location);
+      setLocationStatus('Location saved.');
+    }
+    setSavingLocation(false);
   };
 
   if (role !== 'admin' && !loading) {
@@ -306,6 +418,152 @@ function FarmSetup({ session }: Props) {
             </form>
           )}
         </div>
+        {role === 'admin' && (
+          <div className="card stack">
+            <h2>Location</h2>
+            <form className="stack" onSubmit={handleLocationSave}>
+              <label className="stack">
+                <span>Location name</span>
+                <input
+                  type="text"
+                  value={locationState.name}
+                  onChange={(e) => setLocation({ ...(locationState as Location), name: e.target.value })}
+                  required
+                />
+              </label>
+              <label className="stack">
+                <span>Code</span>
+                <input
+                  type="text"
+                  value={locationState.code ?? ''}
+                  onChange={(e) => setLocation({ ...(locationState as Location), code: e.target.value })}
+                />
+              </label>
+              <label className="stack">
+                <span>Address line 1</span>
+                <input
+                  type="text"
+                  value={locationState.address_line1 ?? ''}
+                  onChange={(e) =>
+                    setLocation({ ...(locationState as Location), address_line1: e.target.value })
+                  }
+                />
+              </label>
+              <label className="stack">
+                <span>Address line 2</span>
+                <input
+                  type="text"
+                  value={locationState.address_line2 ?? ''}
+                  onChange={(e) =>
+                    setLocation({ ...(locationState as Location), address_line2: e.target.value })
+                  }
+                />
+              </label>
+              <div style={{ display: 'grid', gap: '0.5rem', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' }}>
+                <label className="stack">
+                  <span>City</span>
+                  <input
+                    type="text"
+                    value={locationState.city ?? ''}
+                    onChange={(e) => setLocation({ ...(locationState as Location), city: e.target.value })}
+                  />
+                </label>
+                <label className="stack">
+                  <span>Province</span>
+                  <input
+                    type="text"
+                    value={locationState.province ?? ''}
+                    onChange={(e) =>
+                      setLocation({ ...(locationState as Location), province: e.target.value })
+                    }
+                  />
+                </label>
+                <label className="stack">
+                  <span>Postal code</span>
+                  <input
+                    type="text"
+                    value={locationState.postal_code ?? ''}
+                    onChange={(e) =>
+                      setLocation({ ...(locationState as Location), postal_code: e.target.value })
+                    }
+                  />
+                </label>
+                <label className="stack">
+                  <span>Country</span>
+                  <input
+                    type="text"
+                    value={locationState.country ?? ''}
+                    onChange={(e) =>
+                      setLocation({ ...(locationState as Location), country: e.target.value })
+                    }
+                  />
+                </label>
+              </div>
+              <label className="stack">
+                <span>Nearest town</span>
+                <input
+                  type="text"
+                  value={locationState.nearest_town ?? ''}
+                  onChange={(e) =>
+                    setLocation({ ...(locationState as Location), nearest_town: e.target.value })
+                  }
+                />
+              </label>
+              <label className="stack">
+                <span>Nearest hospital name</span>
+                <input
+                  type="text"
+                  value={locationState.nearest_hospital_name ?? ''}
+                  onChange={(e) =>
+                    setLocation({
+                      ...(locationState as Location),
+                      nearest_hospital_name: e.target.value,
+                    })
+                  }
+                />
+              </label>
+              <label className="stack">
+                <span>Nearest hospital distance (km)</span>
+                <input
+                  type="number"
+                  value={locationState.nearest_hospital_distance_km ?? ''}
+                  onChange={(e) =>
+                    setLocation({
+                      ...(locationState as Location),
+                      nearest_hospital_distance_km:
+                        e.target.value === '' ? null : Number(e.target.value),
+                    })
+                  }
+                />
+              </label>
+              <label className="stack">
+                <span>Emergency instructions</span>
+                <textarea
+                  value={locationState.emergency_instructions ?? ''}
+                  onChange={(e) =>
+                    setLocation({
+                      ...(locationState as Location),
+                      emergency_instructions: e.target.value,
+                    })
+                  }
+                />
+              </label>
+              <label className="stack">
+                <span>Notes</span>
+                <textarea
+                  value={locationState.notes ?? ''}
+                  onChange={(e) =>
+                    setLocation({ ...(locationState as Location), notes: e.target.value })
+                  }
+                />
+              </label>
+              <button type="submit" disabled={savingLocation || role !== 'admin'}>
+                {savingLocation ? 'Saving...' : 'Save Location'}
+              </button>
+              {locationStatus && <p className="status">{locationStatus}</p>}
+            </form>
+          </div>
+        )}
       </div>
     </>
   );
