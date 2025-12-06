@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import Nav from '../components/Nav';
+import { toSlug } from '../utils/slug';
 
 type Equipment = {
   id: string;
   location_id: string | null;
+  building_id: string | null;
   category: string | null;
   make: string | null;
   model: string | null;
@@ -25,6 +27,14 @@ type Equipment = {
   air_filter_number: string | null;
   active: boolean | null;
   notes: string | null;
+  location?: {
+    name: string | null;
+    code: string | null;
+  } | null;
+  building?: {
+    name: string | null;
+    code: string | null;
+  } | null;
 };
 
 type EquipmentPageProps = {
@@ -78,7 +88,9 @@ function EquipmentPage({ session }: EquipmentPageProps) {
     const fetchEquipment = async () => {
       setLoading(true);
       setError(null);
-      const { data, error: err } = await supabase.from('equipment').select('*');
+      const { data, error: err } = await supabase
+        .from('equipment')
+        .select('*, location:location_id(name, code), building:building_id(name, code)');
       if (err) {
         setError(err.message);
         setEquipment([]);
@@ -129,15 +141,6 @@ function EquipmentPage({ session }: EquipmentPageProps) {
   const refreshList = async () => {
     const { data, error: err } = await supabase.from('equipment').select('*');
     if (!err) setEquipment(data ?? []);
-  };
-
-  const toSlug = (value: string | null, fallback: string) => {
-    const base = value?.trim() || fallback;
-    return base
-      .replace(/[^a-zA-Z0-9]+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '')
-      .toLowerCase();
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -233,27 +236,31 @@ function EquipmentPage({ session }: EquipmentPageProps) {
             <table>
               <thead>
                 <tr>
-                  <th>Unit #</th>
-                  <th>Nickname</th>
-                  <th>Category</th>
-                  <th>Make</th>
-                  <th>Model</th>
+          <th>Unit #</th>
+          <th>Nickname</th>
+          <th>Category</th>
+          <th>Make</th>
+          <th>Model</th>
+          <th>Location</th>
+          <th>Building</th>
                 </tr>
               </thead>
               <tbody>
-                {equipment.map((item) => (
-                  <tr
-                    key={item.id}
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => openDetails(item)}
-                  >
-                    <td>{item.unit_number ?? '-'}</td>
-                    <td>{item.nickname ?? '-'}</td>
-                    <td>{item.category ?? '-'}</td>
-                    <td>{item.make ?? '-'}</td>
-                    <td>{item.model ?? '-'}</td>
-                  </tr>
-                ))}
+        {equipment.map((item) => (
+          <tr
+            key={item.id}
+            style={{ cursor: 'pointer' }}
+            onClick={() => openDetails(item)}
+          >
+            <td>{item.unit_number ?? '-'}</td>
+            <td>{item.nickname ?? '-'}</td>
+            <td>{item.category ?? '-'}</td>
+            <td>{item.make ?? '-'}</td>
+            <td>{item.model ?? '-'}</td>
+            <td>{item.location?.name ?? '-'}</td>
+            <td>{item.building?.name ?? '-'}</td>
+          </tr>
+        ))}
               </tbody>
             </table>
           )}
@@ -428,6 +435,26 @@ function EquipmentPage({ session }: EquipmentPageProps) {
                 <div>
                   <strong>License class:</strong> {selectedEquipment.license_class ?? '-'}
                 </div>
+                <div>
+                  <strong>Location:</strong>{' '}
+                  {selectedEquipment.location?.name ? (
+                    <Link to={`/locations/${toSlug(selectedEquipment.location.name)}`}>
+                      {selectedEquipment.location.name}
+                    </Link>
+                  ) : (
+                    '-'
+                  )}
+                </div>
+                <div>
+                  <strong>Building:</strong>{' '}
+                  {selectedEquipment.building?.name ? (
+                    <Link to={`/buildings/${toSlug(selectedEquipment.building.name)}`}>
+                      {selectedEquipment.building.name}
+                    </Link>
+                  ) : (
+                    '-'
+                  )}
+                </div>
               </div>
 
               <div className="stack">
@@ -502,7 +529,7 @@ function EquipmentPage({ session }: EquipmentPageProps) {
                   type="button"
                   onClick={() => {
                     if (!selectedEquipment) return;
-                    const slug = toSlug(selectedEquipment.nickname, selectedEquipment.id);
+                    const slug = toSlug(selectedEquipment.nickname || selectedEquipment.id);
                     navigate(`/equipment/${slug}`);
                   }}
                 >

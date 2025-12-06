@@ -12,6 +12,10 @@ import FarmSetup from './pages/FarmSetup';
 import ManageUsers from './pages/ManageUsers';
 import SearchPage from './pages/Search';
 import EquipmentDetail from './pages/EquipmentDetail';
+import Locations from './pages/Locations';
+import LocationDetail from './pages/LocationDetail';
+import Buildings from './pages/Buildings';
+import BuildingDetail from './pages/BuildingDetail';
 
 const APP_VERSION = '0.0.6';
 
@@ -94,6 +98,38 @@ function App() {
           element={
             <RequireAuth session={session}>
               <EquipmentDetail session={session as Session} />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/locations"
+          element={
+            <RequireAuth session={session}>
+              <Locations session={session as Session} />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/locations/:slug"
+          element={
+            <RequireAuth session={session}>
+              <LocationDetail session={session as Session} />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/buildings"
+          element={
+            <RequireAuth session={session}>
+              <Buildings session={session as Session} />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/buildings/:slug"
+          element={
+            <RequireAuth session={session}>
+              <BuildingDetail session={session as Session} />
             </RequireAuth>
           }
         />

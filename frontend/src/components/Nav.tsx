@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
+import { toSlug } from '../utils/slug';
 
 type NavProps = {
   session?: Session;
@@ -93,11 +94,7 @@ function Nav({ session, email, pageTitle }: NavProps) {
           data?.map((row) => {
             const title = row.nickname || row.model || 'Equipment';
             const base = row.nickname?.trim() || row.id;
-            const slug = base
-              .replace(/[^a-zA-Z0-9]+/g, '-')
-              .replace(/-+/g, '-')
-              .replace(/^-|-$/g, '')
-              .toLowerCase();
+            const slug = toSlug(base);
             return {
               id: row.id,
               title,
@@ -195,6 +192,12 @@ function Nav({ session, email, pageTitle }: NavProps) {
           </Link>
           <Link className="nav-btn" to="/equipment" onClick={closeMenu}>
             Equipment
+          </Link>
+          <Link className="nav-btn" to="/locations" onClick={closeMenu}>
+            Locations
+          </Link>
+          <Link className="nav-btn" to="/buildings" onClick={closeMenu}>
+            Buildings
           </Link>
           <Link className="nav-btn" to="/maintenance/add" onClick={closeMenu}>
             Log Maintenance
@@ -319,6 +322,12 @@ function Nav({ session, email, pageTitle }: NavProps) {
               </Link>
               <Link className="nav-btn" to="/equipment" onClick={closeMenu}>
                 Equipment
+              </Link>
+              <Link className="nav-btn" to="/locations" onClick={closeMenu}>
+                Locations
+              </Link>
+              <Link className="nav-btn" to="/buildings" onClick={closeMenu}>
+                Buildings
               </Link>
               <Link className="nav-btn" to="/maintenance/add" onClick={closeMenu}>
                 Log Maintenance

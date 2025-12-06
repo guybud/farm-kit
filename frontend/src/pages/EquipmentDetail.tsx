@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
 import Nav from '../components/Nav';
+import { toSlug } from '../utils/slug';
 
 type Props = {
   session: Session;
@@ -25,6 +26,8 @@ type Equipment = {
   oil_filter_number: string | null;
   fuel_filter_number: string | null;
   air_filter_number: string | null;
+  location?: { name: string | null; code: string | null } | null;
+  building?: { name: string | null; code: string | null } | null;
 };
 
 type MaintenanceLog = {
@@ -51,13 +54,6 @@ function EquipmentDetail({ session }: Props) {
     () => decoded.replace(/-/g, ' ').trim(),
     [decoded],
   );
-  const toSlug = (value: string | null) =>
-    (value ?? '')
-      .replace(/[^a-zA-Z0-9]+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '')
-      .toLowerCase();
-
   const targetSlug = useMemo(() => toSlug(decoded), [decoded]);
 
   useEffect(() => {
@@ -103,7 +99,7 @@ function EquipmentDetail({ session }: Props) {
 
       const { data: candidates, error: candErr } = await supabase
         .from('equipment')
-        .select('*')
+        .select('*, location:location_id(name, code), building:building_id(name, code)')
         .or(orFilters.join(','))
         .limit(30);
       if (candErr) {
@@ -123,7 +119,7 @@ function EquipmentDetail({ session }: Props) {
       if (!found && uuidRegex.test(decoded)) {
         const { data: byId } = await supabase
           .from('equipment')
-          .select('*')
+          .select('*, location:location_id(name, code), building:building_id(name, code)')
           .eq('id', decoded)
           .maybeSingle();
         if (byId) {
@@ -135,8 +131,8 @@ function EquipmentDetail({ session }: Props) {
       if (!found) {
         const { data: broad } = await supabase
           .from('equipment')
-          .select('*')
-          .limit(500);
+          .select('*, location:location_id(name, code), building:building_id(name, code)')
+        .limit(500);
         if (broad && broad.length > 0) {
           found = broad.find((row) => toSlug(row.nickname) === targetSlug) ?? null;
         }
@@ -239,6 +235,26 @@ function EquipmentDetail({ session }: Props) {
             <div><strong>Oil filter:</strong> {equipment.oil_filter_number ?? '-'}</div>
             <div><strong>Fuel filter:</strong> {equipment.fuel_filter_number ?? '-'}</div>
             <div><strong>Air filter:</strong> {equipment.air_filter_number ?? '-'}</div>
+            <div>
+              <strong>Location:</strong>{' '}
+              {equipment.location?.name ? (
+                <Link to={`/locations/${toSlug(equipment.location.name)}`}>
+                  {equipment.location.name}
+                </Link>
+              ) : (
+                '-'
+              )}
+            </div>
+            <div>
+              <strong>Building:</strong>{' '}
+              {equipment.building?.name ? (
+                <Link to={`/buildings/${toSlug(equipment.building.name)}`}>
+                  {equipment.building.name}
+                </Link>
+              ) : (
+                '-'
+              )}
+            </div>
           </div>
         </div>
 
