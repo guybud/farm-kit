@@ -114,9 +114,6 @@ create table if not exists public.equipment (
   notes text
 );
 
-create index if not exists equipment_location_id_idx on public.equipment (location_id);
-create index if not exists equipment_building_id_idx on public.equipment (building_id);
-
 -- maintenance_logs
 create table if not exists public.maintenance_logs (
   id uuid primary key default gen_random_uuid(),
@@ -182,6 +179,9 @@ alter table if exists public.equipment
   add column if not exists oil_filter_number text,
   add column if not exists fuel_filter_number text,
   add column if not exists air_filter_number text;
+
+create index if not exists equipment_location_id_idx on public.equipment (location_id);
+create index if not exists equipment_building_id_idx on public.equipment (building_id);
 
 alter table if exists public.maintenance_logs
   add column if not exists maintenance_date date;
