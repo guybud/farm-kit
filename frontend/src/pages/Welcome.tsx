@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
 
@@ -10,9 +10,37 @@ type Props = {
 function Welcome({ session }: Props) {
   const [password, setPassword] = useState('');
   const [saving, setSaving] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const verifiedRef = useRef(false);
+
+  useEffect(() => {
+    const tokenHash = searchParams.get('token_hash');
+    if (!tokenHash || session || verifiedRef.current) {
+      return;
+    }
+    verifiedRef.current = true;
+    setVerifying(true);
+    setError(null);
+
+    supabase.auth
+      .verifyOtp({ type: 'invite', token_hash: tokenHash })
+      .then(({ error: verifyError }) => {
+        if (verifyError) {
+          setError(
+            verifyError.message.toLowerCase().includes('expired')
+              ? 'This invite link has expired. Ask your farm admin to send a new one.'
+              : verifyError.message,
+          );
+        } else {
+          setSearchParams({}, { replace: true });
+        }
+      })
+      .finally(() => setVerifying(false));
+  }, [searchParams, session, setSearchParams]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -51,10 +79,12 @@ function Welcome({ session }: Props) {
           <h1>Welcome to Farmkit</h1>
         </div>
 
-        {!session ? (
+        {verifying ? (
+          <p className="status">Checking your invite...</p>
+        ) : !session ? (
           <div className="stack">
             <p className="status">
-              Your invite session is not active. Open the latest invite link or sign in.
+              {error ?? 'Your invite session is not active. Open the latest invite link or sign in.'}
             </p>
             <button type="button" onClick={() => navigate('/login')}>
               Go to login

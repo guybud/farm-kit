@@ -161,17 +161,10 @@ Deno.serve(async (req) => {
 
   if (!authUserId) {
     const origin = req.headers.get('Origin');
-    const redirectTo =
-      Deno.env.get('FARMKIT_INVITE_REDIRECT_URL') ??
-      (origin ? `${origin}/welcome` : undefined);
+    const appUrl =
+      Deno.env.get('FARMKIT_APP_URL') ?? origin ?? 'https://farmkit.app';
 
-    const { data: inviteData, error: inviteError } =
-      await serviceClient.auth.admin.inviteUserByEmail(email, {
-        redirectTo,
-        data: displayName ? { display_name: displayName } : undefined,
-      });
-
-    if (inviteError) {
+    const recordFailure = async (errorMessage: string) => {
       await serviceClient.from('farm_team_invites').insert({
         farm_id: farmId,
         email,
@@ -180,12 +173,91 @@ Deno.serve(async (req) => {
         display_name: displayName,
         status: 'failed',
         created_by_auth_user_id: user.id,
-        error_message: inviteError.message,
+        error_message: errorMessage,
       });
-      return json(400, { error: inviteError.message });
+    };
+
+    const { data: linkData, error: linkError } =
+      await serviceClient.auth.admin.generateLink({
+        type: 'invite',
+        email,
+        options: {
+          data: displayName ? { display_name: displayName } : undefined,
+        },
+      });
+
+    if (linkError) {
+      await recordFailure(linkError.message);
+      return json(400, { error: linkError.message });
     }
 
-    authUserId = inviteData.user?.id ?? null;
+    authUserId = linkData.user?.id ?? null;
+    const tokenHash = linkData.properties?.hashed_token;
+
+    if (!tokenHash) {
+      await recordFailure('Invite link was not generated.');
+      return json(500, { error: 'Invite link was not generated.' });
+    }
+
+    const { data: resendKey, error: keyError } = await serviceClient.rpc(
+      'farmkit_service_secret',
+      { secret_name: 'resend_api_key' },
+    );
+
+    if (keyError || !resendKey) {
+      await recordFailure('Email service is not configured.');
+      return json(500, { error: 'Email service is not configured.' });
+    }
+
+    const { data: farm } = await serviceClient
+      .from('farms')
+      .select('name')
+      .eq('id', farmId)
+      .maybeSingle();
+    const farmName = farm?.name ?? 'your farm';
+
+    const inviteUrl = `${appUrl}/welcome?token_hash=${encodeURIComponent(tokenHash)}&type=invite`;
+    const greeting = displayName ? `Hi ${displayName},` : 'Hi,';
+
+    const emailResponse = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${resendKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: Deno.env.get('FARMKIT_INVITE_FROM') ?? 'Farmkit <invites@send.njmit.net>',
+        to: [email],
+        subject: `You're invited to join ${farmName} on Farmkit`,
+        text: [
+          greeting,
+          '',
+          `You've been invited to join ${farmName} on Farmkit, the farm maintenance tracker.`,
+          '',
+          'Open this link to set your password and get started:',
+          inviteUrl,
+          '',
+          'This link expires after 24 hours. If it has expired, ask your farm admin to send a new invite.',
+          '',
+          'The Farmkit team',
+        ].join('\n'),
+        html: [
+          `<p>${greeting}</p>`,
+          `<p>You've been invited to join <strong>${farmName}</strong> on Farmkit, the farm maintenance tracker.</p>`,
+          `<p><a href="${inviteUrl}">Set your password and get started</a></p>`,
+          `<p style="color:#555;font-size:13px">Or copy this link into your browser:<br>${inviteUrl}</p>`,
+          `<p style="color:#555;font-size:13px">This link expires after 24 hours. If it has expired, ask your farm admin to send a new invite.</p>`,
+          '<p>The Farmkit team</p>',
+        ].join('\n'),
+      }),
+    });
+
+    if (!emailResponse.ok) {
+      const detail = await emailResponse.text().catch(() => '');
+      await recordFailure(`Email send failed (${emailResponse.status}): ${detail.slice(0, 300)}`);
+      return json(502, { error: 'The invite email could not be sent. Try again later.' });
+    }
+
     inviteSent = true;
   }
 
