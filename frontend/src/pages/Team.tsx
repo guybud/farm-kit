@@ -112,6 +112,7 @@ function Team({ session }: Props) {
     account_mode: TeamMember['account_mode'];
   } | null>(null);
   const [memberSaving, setMemberSaving] = useState(false);
+  const [resetSending, setResetSending] = useState(false);
   const [editPerson, setEditPerson] = useState<Person | null>(null);
   const [personDraft, setPersonDraft] = useState<Person | null>(null);
   const [personModalSaving, setPersonModalSaving] = useState(false);
@@ -285,6 +286,26 @@ function Team({ session }: Props) {
       await loadData();
     }
     setMemberSaving(false);
+  };
+
+  const sendPasswordReset = async () => {
+    if (!editMember || !activeFarmId || !editMember.email) return;
+    const confirmed = window.confirm(
+      `Email a password reset link to ${editMember.email}?`,
+    );
+    if (!confirmed) return;
+    setResetSending(true);
+    setModalError(null);
+    const { data, error: resetError } = await supabase.functions.invoke('send-password-reset', {
+      body: { farmId: activeFarmId, email: editMember.email },
+    });
+    if (resetError) {
+      setModalError(resetError.message);
+    } else {
+      setEditMember(null);
+      setStatus(typeof data?.message === 'string' ? data.message : 'Password reset email sent.');
+    }
+    setResetSending(false);
   };
 
   const handleAddPerson = async (event: React.FormEvent) => {
@@ -712,6 +733,14 @@ function Team({ session }: Props) {
                   onClick={() => setEditMember(null)}
                 >
                   Cancel
+                </button>
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={sendPasswordReset}
+                  disabled={resetSending || memberSaving || !editMember.email}
+                >
+                  {resetSending ? 'Sending…' : 'Send password reset'}
                 </button>
                 <button
                   type="button"

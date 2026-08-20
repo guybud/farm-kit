@@ -177,21 +177,48 @@ Deno.serve(async (req) => {
       });
     };
 
-    const { data: linkData, error: linkError } =
-      await serviceClient.auth.admin.generateLink({
-        type: 'invite',
+    // Closed beta: the farmkit_block_self_signup trigger rejects every
+    // auth.users insert unless the email was pre-authorized here (0009).
+    const allowlistExpiry = new Date(now.getTime() + 10 * 60 * 1000).toISOString();
+    const { error: allowError } = await serviceClient
+      .from('farmkit_signup_allowlist')
+      .upsert({ email, expires_at: allowlistExpiry });
+
+    if (allowError) {
+      await recordFailure(allowError.message);
+      return json(500, { error: 'Could not authorize the invite.' });
+    }
+
+    // Create the account confirmed (the admin vouches for the address), then
+    // hand out a recovery link for the set-password step.
+    const { data: created, error: createError } =
+      await serviceClient.auth.admin.createUser({
         email,
-        options: {
-          data: displayName ? { display_name: displayName } : undefined,
-        },
+        email_confirm: true,
+        user_metadata: displayName ? { display_name: displayName } : undefined,
       });
+
+    await serviceClient
+      .from('farmkit_signup_allowlist')
+      .delete()
+      .lte('expires_at', new Date().toISOString());
+    await serviceClient.from('farmkit_signup_allowlist').delete().eq('email', email);
+
+    if (createError) {
+      await recordFailure(createError.message);
+      return json(400, { error: createError.message });
+    }
+
+    authUserId = created.user?.id ?? null;
+
+    const { data: linkData, error: linkError } =
+      await serviceClient.auth.admin.generateLink({ type: 'recovery', email });
 
     if (linkError) {
       await recordFailure(linkError.message);
       return json(400, { error: linkError.message });
     }
 
-    authUserId = linkData.user?.id ?? null;
     const tokenHash = linkData.properties?.hashed_token;
 
     if (!tokenHash) {
@@ -216,7 +243,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
     const farmName = farm?.name ?? 'your farm';
 
-    const inviteUrl = `${appUrl}/welcome?token_hash=${encodeURIComponent(tokenHash)}&type=invite`;
+    const inviteUrl = `${appUrl}/welcome?token_hash=${encodeURIComponent(tokenHash)}&type=recovery&intent=invite`;
     const greeting = displayName ? `Hi ${displayName},` : 'Hi,';
 
     const emailResponse = await fetch('https://api.resend.com/emails', {

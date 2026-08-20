@@ -7,6 +7,10 @@ type Props = {
   session: Session | null;
 };
 
+type OtpType = 'invite' | 'recovery' | 'magiclink';
+
+const OTP_TYPES: OtpType[] = ['invite', 'recovery', 'magiclink'];
+
 function Welcome({ session }: Props) {
   const [password, setPassword] = useState('');
   const [saving, setSaving] = useState(false);
@@ -16,6 +20,9 @@ function Welcome({ session }: Props) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const verifiedRef = useRef(false);
+  const [intent, setIntent] = useState<'invite' | 'reset'>(
+    searchParams.get('intent') === 'reset' ? 'reset' : 'invite',
+  );
 
   useEffect(() => {
     const tokenHash = searchParams.get('token_hash');
@@ -23,16 +30,20 @@ function Welcome({ session }: Props) {
       return;
     }
     verifiedRef.current = true;
+    const typeParam = searchParams.get('type');
+    const otpType: OtpType = OTP_TYPES.includes(typeParam as OtpType)
+      ? (typeParam as OtpType)
+      : 'invite';
     setVerifying(true);
     setError(null);
 
     supabase.auth
-      .verifyOtp({ type: 'invite', token_hash: tokenHash })
+      .verifyOtp({ type: otpType, token_hash: tokenHash })
       .then(({ error: verifyError }) => {
         if (verifyError) {
           setError(
             verifyError.message.toLowerCase().includes('expired')
-              ? 'This invite link has expired. Ask your farm admin to send a new one.'
+              ? 'This link has expired. Ask your farm admin to send a new one.'
               : verifyError.message,
           );
         } else {
@@ -41,6 +52,8 @@ function Welcome({ session }: Props) {
       })
       .finally(() => setVerifying(false));
   }, [searchParams, session, setSearchParams]);
+
+  const heading = intent === 'reset' ? 'Reset your password' : 'Welcome to Farmkit';
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -69,6 +82,7 @@ function Welcome({ session }: Props) {
 
     setMessage('Password saved.');
     setSaving(false);
+    setIntent('invite');
     navigate('/dashboard', { replace: true });
   };
 
@@ -76,15 +90,15 @@ function Welcome({ session }: Props) {
     <div className="app">
       <div className="card stack" style={{ marginTop: '2rem' }}>
         <div className="page-head">
-          <h1>Welcome to Farmkit</h1>
+          <h1>{heading}</h1>
         </div>
 
         {verifying ? (
-          <p className="status">Checking your invite...</p>
+          <p className="status">Checking your link...</p>
         ) : !session ? (
           <div className="stack">
             <p className="status">
-              {error ?? 'Your invite session is not active. Open the latest invite link or sign in.'}
+              {error ?? 'Your link session is not active. Open the latest emailed link or sign in.'}
             </p>
             <button type="button" onClick={() => navigate('/login')}>
               Go to login
@@ -93,7 +107,7 @@ function Welcome({ session }: Props) {
         ) : (
           <form className="stack" onSubmit={handleSubmit}>
             <label>
-              <span>Set password</span>
+              <span>{intent === 'reset' ? 'New password' : 'Set password'}</span>
               <input
                 type="password"
                 value={password}
