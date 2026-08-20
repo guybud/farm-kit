@@ -11,9 +11,9 @@
   "assets": {
     "directory": "../../frontend/dist",
     "not_found_handling": "single-page-application"
-  }
-  // "routes": [
-  //   { "pattern": "farmkit.app", "custom_domain": true },
-  //   { "pattern": "www.farmkit.app", "custom_domain": true }
-  // ]
+  },
+  "routes": [
+    { "pattern": "farmkit.app", "custom_domain": true },
+    { "pattern": "www.farmkit.app", "custom_domain": true }
+  ]
 }
