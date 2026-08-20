@@ -50,6 +50,7 @@ function Account({ session }: Props) {
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState('');
   const [farmGroups, setFarmGroups] = useState<FarmGroup[]>([]);
@@ -246,6 +247,16 @@ function Account({ session }: Props) {
     setSaving(false);
   };
 
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    setError('');
+    const { error: signOutError } = await supabase.auth.signOut();
+    if (signOutError) {
+      setError(signOutError.message);
+      setSigningOut(false);
+    }
+  };
+
   return (
     <>
       <Nav session={session} email={session.user.email} pageTitle="Account" />
@@ -356,6 +367,20 @@ function Account({ session }: Props) {
                     ))}
                   </div>
                 )}
+              </div>
+
+              <div className="stack">
+                <h2>Session</h2>
+                <div>
+                  <button
+                    type="button"
+                    className="secondary"
+                    onClick={handleSignOut}
+                    disabled={signingOut}
+                  >
+                    {signingOut ? 'Signing out…' : 'Log out'}
+                  </button>
+                </div>
               </div>
             </>
           )}
