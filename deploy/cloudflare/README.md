@@ -3,7 +3,19 @@
 Replaces Netlify hosting for the app (farmkit.app). Marketing site (farmkit.ca)
 launch is a separate, still-parked decision; its zone is preloaded here too.
 
-## State (2026-08-20) — NS flipped, one manual step left
+## State (2026-08-20) — DONE, app live on Cloudflare
+
+farmkit.app now serves from the `farmkit-app` worker (verified: `server: cloudflare`,
+apex resolves to CF anycast, www 200, SPA deep links 200, login renders, live bundle
+points at prod Supabase `rjhffpxijysfuusriqwg`). The two Netlify records were deleted
+and the custom domains attached. Netlify site `farmkit-njmit` is now unused and can be
+deleted after a soak.
+
+Remaining cleanup: delete `frontend/public/_redirects` and the `rm` line in
+`deploy-cf.sh` once Netlify is torn down. farmkit.ca/.org zone activation was still
+propagating at the time of writing; neither hosts anything yet.
+
+## History — the flip (kept for the rollback details)
 
 Nameservers for all four domains were flipped at GoDaddy (API `PATCH /v1/domains/{d}`
 with `{"nameServers": [...]}`; note the `/nameServers` sub-resource 404s). Pre-flip
@@ -12,20 +24,16 @@ NS pairs, in case a rollback is ever needed:
 farmkit.app ns43/ns44, farmkit.ca ns15/ns16, farmkit.net ns23/ns24,
 farmkit.org ns59/ns60 (all `.domaincontrol.com`).
 
-**Blocked, needs a human:** attaching the worker's custom domains fails while the
-old Netlify records still exist —
+Gotcha for future custom-domain work: Cloudflare refuses to attach a Worker custom
+domain while a normal DNS record for that hostname exists —
 
     Hostname 'farmkit.app' already has externally managed DNS records (A, CNAME,
     etc). Delete them first or try a different hostname. [code: 100117]
 
-Delete these two records in the farmkit.app zone (Cloudflare dashboard → DNS), then
-run `./deploy-cf.sh`; the routes block in wrangler.jsonc is already uncommented so
-the custom domains attach on that deploy:
-  - `A farmkit.app -> 75.2.60.5` (Netlify)
-  - `CNAME www.farmkit.app -> farmkit-njmit.netlify.app` (Netlify)
-
-Leave every other record alone, especially the 5 MX, SPF/DKIM/DMARC TXT, and
-`A dev.farmkit.app -> 100.127.242.124` (Tailnet).
+Deleting the old `A farmkit.app -> 75.2.60.5` and
+`CNAME www.farmkit.app -> farmkit-njmit.netlify.app` cleared it; wrangler then creates
+its own records. Leave every other record alone, especially the 5 MX, SPF/DKIM/DMARC
+TXT, and `A dev.farmkit.app -> 100.127.242.124` (Tailnet).
 
 ## Verified after the flip
 
